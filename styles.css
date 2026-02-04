@@ -960,7 +960,7 @@ body{
     -webkit-appearance: none;
     appearance: none;
     margin: 0;
-    transition: transform 0.3s ease, background-color 0.2s ease;
+    transition: transform 0.3s ease, background-color 0.2s ease, border-right 0.3s ease;
     align-items: center;
     justify-content: center;
     transform: translateX(0);
@@ -1029,13 +1029,14 @@ body{
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
+        width: calc(100vw - 7.5rem); /* Exact width to align with BACK button */
         max-width: calc(100vw - 7.5rem); /* Leave space for BACK button (min-width 7rem + padding) */
         height: 100vh;
         z-index: 200;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         border-right: 1px solid var(--color-white);
+        border-left: none; /* No left border to eliminate seam with BACK button */
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
     }
     
@@ -1055,7 +1056,7 @@ body{
         }
         
         body.sidebar-open .mobile-menu-toggle{
-            transform: translateX(calc(100vw - 7.5rem));
+            transform: translateX(calc(100vw - 7.5rem - 1px));
         }
     }
     
