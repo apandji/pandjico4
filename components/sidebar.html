@@ -6,7 +6,13 @@
             </div>
         </a>
         <div class="logo-date" id="logoDate"></div>
-        <div class="logo-weather" id="logoWeather"></div>
+        <div class="logo-weather" id="logoWeather">
+            <span class="logo-weather-placeholder" aria-hidden="true">
+                <span class="logo-weather-text">It is </span>
+                <span class="logo-weather-icon" style="display: inline-block; width: 2rem; height: 2rem; min-width: 2rem; min-height: 2rem;"></span>
+                <span class="logo-weather-text"> 00F in St. Louis</span>
+            </span>
+        </div>
     </header>
     <nav>
         <div class="nav-section works-section">
@@ -16,6 +22,9 @@
                     <i data-lucide="filter" class="works-filter-icon"></i>
                     <span class="filter-badge" id="filterBadge" aria-hidden="true"></span>
                 </button>
+                <a href="index.html" class="nav-section-link-icon" aria-label="See all works">
+                    <i data-lucide="chevron-right" class="nav-section-icon"></i>
+                </a>
             </h2>
             <div class="filter-controls" id="filterControls">
                 <div class="filter-content" id="filterContent">
@@ -61,13 +70,28 @@
             </ul>
         </div>
         <div class="nav-section fixed-section">
-            <h2 class="nav-section-title">writings</h2>
+            <h2 class="nav-section-title">
+                <span class="nav-section-link">writings</span>
+                <a href="#" class="nav-section-link-icon" aria-label="See writings">
+                    <i data-lucide="chevron-right" class="nav-section-icon"></i>
+                </a>
+            </h2>
         </div>
         <div class="nav-section fixed-section">
-            <h2 class="nav-section-title">about me</h2>
+            <h2 class="nav-section-title">
+                <span class="nav-section-link">about me</span>
+                <a href="#" class="nav-section-link-icon" aria-label="About me">
+                    <i data-lucide="chevron-right" class="nav-section-icon"></i>
+                </a>
+            </h2>
         </div>
         <div class="nav-section fixed-section">
-            <h2 class="nav-section-title">about site</h2>
+            <h2 class="nav-section-title">
+                <span class="nav-section-link">about site</span>
+                <a href="#" class="nav-section-link-icon" aria-label="About site">
+                    <i data-lucide="chevron-right" class="nav-section-icon"></i>
+                </a>
+            </h2>
         </div>
         </nav>
     </aside>

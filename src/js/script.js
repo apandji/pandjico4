@@ -89,7 +89,7 @@ async function loadComponent(componentName, insertMethod, options) {
         try {
             response = await fetch(componentPath, {
                 method: 'GET',
-                cache: 'no-cache',
+                cache: 'default', // Allow browser/service worker caching
                 credentials: 'same-origin'
             });
         } catch (fetchError) {
@@ -137,55 +137,104 @@ async function loadComponent(componentName, insertMethod, options) {
         
         // Re-initialize sidebar features after sidebar loads
         if (componentName === 'sidebar') {
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-                try {
-                    initializeFiltering();
-                    initializeSorting();
-                    initializeFilterToggle();
-                    initializeLogoScrambling();
-                    initializeDateDisplay();
-                    initializeWeatherDisplay();
-                    // Initialize mobile menu - check if component exists first
-                    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-                    if (mobileMenuToggle) {
-                        initializeMobileMenu();
-                    } else if (window.innerWidth <= 768) {
-                        // If on mobile and menu doesn't exist, try to load it
-                        console.log('Sidebar loaded but mobile menu missing, attempting to load...');
-                        loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
-                            if (result) {
-                                setTimeout(() => {
-                                    initializeMobileMenu();
-                                }, 100);
+            // Get sidebar element and mark as loaded to prevent flash
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                // Small delay to ensure DOM is ready, then show sidebar
+                setTimeout(() => {
+                    try {
+                        initializeFiltering();
+                        initializeSorting();
+                        initializeFilterToggle();
+                        initializeLogoScrambling();
+                        initializeDateDisplay();
+                        initializeWeatherDisplay();
+                        // Initialize sidebar toggle (mobile)
+                        const sidebarToggle = document.getElementById('sidebarToggle');
+                        if (sidebarToggle) {
+                            initializeSidebarToggle();
+                        }
+                        
+                        // Show sidebar after initialization is complete
+                        sidebar.classList.add('loaded');
+                        
+                        // Calculate and set header height for mobile carousel
+                        function updateMobileLayout() {
+                            if (window.innerWidth <= 768) {
+                                const homeHeader = document.querySelector('.home-header');
+                                const featuredWorkCta = document.getElementById('featuredWorkCta');
+                                if (homeHeader) {
+                                    const headerHeight = homeHeader.offsetHeight;
+                                    // Get exact CTA height
+                                    const ctaHeight = featuredWorkCta ? featuredWorkCta.offsetHeight : 72; // 4.5rem fallback
+                                    
+                                    document.documentElement.style.setProperty('--header-height', headerHeight + 'px');
+                                    document.documentElement.style.setProperty('--cta-height', ctaHeight + 'px');
+                                    
+                                    // Update featured work section margin
+                                    const featuredWork = document.querySelector('.featured-work');
+                                    if (featuredWork) {
+                                        featuredWork.style.marginTop = headerHeight + 'px';
+                                        featuredWork.style.height = `calc(100vh - ${headerHeight}px)`;
+                                        featuredWork.style.maxHeight = `calc(100vh - ${headerHeight}px)`;
+                                    }
+                                    
+                                    // Update card heights with exact CTA height
+                                    const cards = document.querySelectorAll('.featured-project-card');
+                                    const cardHeight = window.innerHeight - headerHeight - ctaHeight;
+                                    cards.forEach(function(card) {
+                                        card.style.height = cardHeight + 'px';
+                                        card.style.minHeight = cardHeight + 'px';
+                                        card.style.maxHeight = cardHeight + 'px';
+                                    });
+                                    
+                                    // Don't set padding-bottom here - it creates extra scrollable space
+                                    // The carousel setup function handles spacing
+                                    
+                                    // Trigger carousel recalculation if it exists
+                                    if (window.recalculateCarousel) {
+                                        setTimeout(function() {
+                                            window.recalculateCarousel();
+                                        }, 50);
+                                    }
+                                }
                             }
+                        }
+                        
+                        // Initial calculation
+                        setTimeout(updateMobileLayout, 100);
+                        
+                        // Update on resize
+                        window.addEventListener('resize', function() {
+                            clearTimeout(window.mobileLayoutTimeout);
+                            window.mobileLayoutTimeout = setTimeout(updateMobileLayout, 100);
                         });
+                        
+                        // Show main content slightly after sidebar starts (for naturalistic, calming entrance)
+                        const mainContent = document.querySelector('.content');
+                        if (mainContent) {
+                            setTimeout(function() {
+                                mainContent.classList.add('loaded');
+                            }, 100); // Small delay to create naturalistic sequence
+                        }
+                    } catch (error) {
+                        console.error('Error initializing sidebar features:', error);
+                        // Still show sidebar even if initialization fails
+                        if (sidebar) {
+                            sidebar.classList.add('loaded');
+                        }
+                        // Show content even if sidebar initialization fails
+                        const mainContent = document.querySelector('.content');
+                        if (mainContent) {
+                            setTimeout(function() {
+                                mainContent.classList.add('loaded');
+                            }, 200);
+                        }
                     }
-                } catch (error) {
-                    console.error('Error initializing sidebar features:', error);
-                }
-            }, 100);
+                }, 50); // Reduced delay for faster appearance
+            }
         }
         
-        // Re-initialize mobile menu after mobile menu component loads
-        // Note: We only initialize Lucide icons here, full initialization happens when sidebar loads
-        if (componentName === 'mobile-menu') {
-            setTimeout(() => {
-                // Initialize Lucide icons for the menu icons
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-                // Also ensure mobile menu is initialized if sidebar already exists
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar) {
-                    try {
-                        initializeMobileMenu();
-                    } catch (error) {
-                        console.error('Error initializing mobile menu after component load:', error);
-                    }
-                }
-            }, 100);
-        }
         
         return true;
     } catch (error) {
@@ -324,61 +373,38 @@ function fixSidebarPaths(basePath) {
     setTimeout(initLucide, 100);
 })();
 
-// Mobile menu toggle - can be called multiple times for dynamic components
-function initializeMobileMenu() {
-    // Get mobile menu toggle
-    var mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    
-    const mobileMenuText = mobileMenuToggle ? mobileMenuToggle.querySelector('.mobile-menu-text') : null;
+// Sidebar toggle - simplified single component approach
+function initializeSidebarToggle() {
+    const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
     
-    if (!mobileMenuToggle || !sidebar || !mobileMenuText) return;
+    if (!sidebarToggle || !sidebar) return;
     
     // Skip if already initialized
-    if (mobileMenuToggle.dataset.initialized === 'true') {
+    if (sidebarToggle.dataset.initialized === 'true') {
         return;
     }
-    mobileMenuToggle.dataset.initialized = 'true';
+    sidebarToggle.dataset.initialized = 'true';
     
-    const originalText = 'MENU';
-    const closeText = 'BACK';
-    let scrambleInterval = null;
-    
-    function setMenuText(targetText) {
-        // Clear any existing interval
-        if (scrambleInterval) {
-            clearInterval(scrambleInterval);
-            scrambleInterval = null;
-        }
-        
-        // Set text instantly
-        mobileMenuText.textContent = targetText;
-        
-        // Toggle icons and class
-        const rightIcon = mobileMenuToggle.querySelector('.mobile-menu-icon-right');
-        const leftIcon = mobileMenuToggle.querySelector('.mobile-menu-icon-left');
-        
-        if (targetText === closeText) {
-            mobileMenuToggle.classList.add('is-close');
-            // Show left icon, hide right icon
-            if (rightIcon) rightIcon.style.display = 'none';
-            if (leftIcon) leftIcon.style.display = 'block';
-            // Re-initialize Lucide icons
-            if (typeof lucide !== 'undefined' && leftIcon) {
-                lucide.createIcons();
-            }
-        } else {
-            mobileMenuToggle.classList.remove('is-close');
-            // Show right icon, hide left icon
-            if (rightIcon) rightIcon.style.display = 'block';
-            if (leftIcon) leftIcon.style.display = 'none';
-            // Re-initialize Lucide icons
-            if (typeof lucide !== 'undefined' && rightIcon) {
-                lucide.createIcons();
-            }
+    // Show toggle on mobile
+    if (window.innerWidth <= 768) {
+        sidebarToggle.style.display = 'flex';
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     }
+    
+    // Update toggle visibility on resize
+    function updateToggleDisplay() {
+        if (window.innerWidth <= 768) {
+            sidebarToggle.style.display = 'flex';
+        } else {
+            sidebarToggle.style.display = 'none';
+        }
+    }
+    window.addEventListener('resize', updateToggleDisplay);
     
     // Toggle sidebar
     function toggleSidebar() {
@@ -391,13 +417,21 @@ function initializeMobileMenu() {
     }
     
     function openSidebar() {
+        // Add open class to instantly show sidebar
         sidebar.classList.add('open');
         document.body.classList.add('sidebar-open');
+        
+        // Instantly show backdrop
         if (sidebarBackdrop) {
             sidebarBackdrop.classList.add('active');
         }
-        // Change to CLOSE instantly
-        setMenuText(closeText);
+        
+        // Update icon visibility
+        const openIcon = sidebarToggle.querySelector('.sidebar-toggle-icon-open');
+        const closeIcon = sidebarToggle.querySelector('.sidebar-toggle-icon-close');
+        if (openIcon) openIcon.style.display = 'none';
+        if (closeIcon) closeIcon.style.display = 'block';
+        
         // Trigger haptic feedback if available
         if (window.triggerHapticFeedback) {
             window.triggerHapticFeedback('light');
@@ -405,13 +439,21 @@ function initializeMobileMenu() {
     }
     
     function closeSidebar() {
+        // Remove open class to instantly hide sidebar
         sidebar.classList.remove('open');
         document.body.classList.remove('sidebar-open');
+        
+        // Instantly hide backdrop
         if (sidebarBackdrop) {
             sidebarBackdrop.classList.remove('active');
         }
-        // Change back to MENU instantly
-        setMenuText(originalText);
+        
+        // Update icon visibility
+        const openIcon = sidebarToggle.querySelector('.sidebar-toggle-icon-open');
+        const closeIcon = sidebarToggle.querySelector('.sidebar-toggle-icon-close');
+        if (openIcon) openIcon.style.display = 'block';
+        if (closeIcon) closeIcon.style.display = 'none';
+        
         // Trigger haptic feedback if available
         if (window.triggerHapticFeedback) {
             window.triggerHapticFeedback('light');
@@ -419,24 +461,45 @@ function initializeMobileMenu() {
     }
     
     // Haptic feedback function - available globally
-    window.triggerHapticFeedback = function(intensity = 'light') {
-        // Check if Vibration API is available
-        if ('vibrate' in navigator) {
-            const patterns = {
-                light: 5,
-                medium: 10,
-                heavy: 20
-            };
-            navigator.vibrate(patterns[intensity] || 5);
-        }
-    };
+    if (!window.triggerHapticFeedback) {
+        window.triggerHapticFeedback = function(intensity) {
+            // iOS Safari compatibility - handle default parameter
+            if (typeof intensity === 'undefined' || intensity === null) {
+                intensity = 'light';
+            }
+            // Check if Vibration API is available
+            if ('vibrate' in navigator) {
+                const patterns = {
+                    light: 5,
+                    medium: 10,
+                    heavy: 20
+                };
+                navigator.vibrate(patterns[intensity] || 5);
+            }
+        };
+    }
     
-    mobileMenuToggle.addEventListener('click', function(e) {
+    // Attach click handler
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        toggleSidebar();
+        return false;
+    }, true); // Use capture phase to ensure it fires
+    
+    // Also handle touchstart for mobile
+    sidebarToggle.addEventListener('touchstart', function(e) {
+        e.preventDefault();
         e.stopPropagation();
         toggleSidebar();
+        return false;
     });
     
-    // Swipe gesture handling for sidebar
+    // Background color detection disabled for performance
+    // The toggle uses a semi-transparent background with backdrop blur which works on both light and dark backgrounds
+    
+    // Swipe gesture handling for sidebar (global)
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -463,12 +526,17 @@ function initializeMobileMenu() {
         if (absDeltaX > absDeltaY && absDeltaX > minSwipeDistance) {
             const isSidebarOpen = sidebar.classList.contains('open');
             
-            // Swipe right to open (from left edge)
-            if (deltaX > 0 && !isSidebarOpen && touchStartX < 50) {
+            // Swipe right to open (start further from edge to avoid Safari back gesture)
+            // Safari's back gesture uses the leftmost 20-30px, so we start at 40px
+            if (deltaX > 0 && !isSidebarOpen && touchStartX >= 40 && touchStartX < 120) {
+                e.preventDefault();
+                e.stopPropagation();
                 openSidebar();
             }
-            // Swipe left to close (when sidebar is open)
+            // Swipe left to close (when sidebar is open - can swipe from anywhere)
             else if (deltaX < 0 && isSidebarOpen) {
+                e.preventDefault();
+                e.stopPropagation();
                 closeSidebar();
             }
         }
@@ -489,16 +557,7 @@ function initializeMobileMenu() {
         });
     });
     
-    // Close sidebar on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-            closeSidebar();
-        }
-    });
 }
-
-// Note: initializeMobileMenu is called after sidebar component loads
-// No need to initialize on DOMContentLoaded since sidebar is always loaded dynamically
 
 // Set today's date below logo - can be called multiple times
 function initializeDateDisplay() {
@@ -529,6 +588,12 @@ function initializeWeatherDisplay() {
         return;
     }
     logoWeather.dataset.initialized = 'true';
+    
+    // Reserve space immediately to prevent header expansion
+    // Set height before any content is added (use !important via setProperty)
+    logoWeather.style.setProperty('height', '2rem', 'important');
+    logoWeather.style.setProperty('min-height', '2rem', 'important');
+    logoWeather.style.setProperty('flex-shrink', '0', 'important');
     
     const CACHE_KEY = 'weather_cache';
     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -701,11 +766,35 @@ function initializeWeatherDisplay() {
         tempSpan.setAttribute('data-temp-f', weather.tempF);
         tempSpan.setAttribute('data-temp-c', weather.tempC);
         
-        // Clear and add elements in correct order
-        logoWeather.innerHTML = '';
-        logoWeather.appendChild(prefixSpan);
-        logoWeather.appendChild(iconContainer);
-        logoWeather.appendChild(tempSpan);
+        // Maintain height to prevent layout shift
+        logoWeather.style.setProperty('height', '2rem', 'important');
+        logoWeather.style.setProperty('min-height', '2rem', 'important');
+        
+        // Find placeholder
+        const placeholder = logoWeather.querySelector('.logo-weather-placeholder');
+        
+        // Create content wrapper
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'logo-weather-content';
+        contentWrapper.appendChild(prefixSpan);
+        contentWrapper.appendChild(iconContainer);
+        contentWrapper.appendChild(tempSpan);
+        
+        // Add content wrapper (will overlay placeholder)
+        logoWeather.appendChild(contentWrapper);
+        
+        // Fade in the content, then remove placeholder after transition completes
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                contentWrapper.style.opacity = '1';
+                // Remove placeholder after fade-in completes (400ms)
+                setTimeout(function() {
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.style.display = 'none'; // Hide instead of remove to prevent reflow
+                    }
+                }, 400);
+            });
+        });
         
         // Add glitch effect on hover (F to C conversion)
         let isHovering = false;
@@ -761,8 +850,11 @@ function initializeWeatherDisplay() {
         localStorage.removeItem(CACHE_KEY);
         console.log('Cache cleared');
         
-        // Show loading state
-        logoWeather.textContent = 'Fetching the weather...';
+        // Reserve space immediately to prevent header expansion
+        // Set fixed height - space is already reserved by placeholder in HTML
+        logoWeather.style.setProperty('height', '2rem', 'important');
+        logoWeather.style.setProperty('min-height', '2rem', 'important');
+        logoWeather.style.setProperty('flex-shrink', '0', 'important');
         
         // Always fetch fresh (cache disabled for testing)
         console.log('Fetching fresh weather data');
@@ -772,8 +864,9 @@ function initializeWeatherDisplay() {
         if (weather) {
             cacheWeather(weather);
             await displayWeather(weather);
+            // Content wrapper will handle its own fade-in via CSS transition
         } else {
-            // Error - show nothing
+            // Error - hide completely but maintain space to prevent layout shift
             logoWeather.style.display = 'none';
         }
     }
@@ -867,8 +960,63 @@ function initializeLogoScrambling() {
             clearInterval(scrambleInterval);
             scrambleInterval = null;
         }
-        // Restore to current text (either original or easter egg)
-        logoText.textContent = currentText;
+        
+        // Smoothly reassemble instead of harsh reset
+        var reassembleInterval = null;
+        var reassembleFrameCount = 0;
+        var targetText = currentText;
+        
+        function reassemble() {
+            const currentArray = logoText.textContent.split('');
+            const targetArray = targetText.split('');
+            let changed = 0;
+            const maxChanges = 2;
+            
+            // Gradually reveal correct characters
+            for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                if (currentArray[i] === ' ') continue;
+                
+                // If character doesn't match target, gradually reveal it
+                if (currentArray[i] !== targetArray[i]) {
+                    // 50% chance to reveal correct character, 30% chance for random char, 20% stay same
+                    var rand = Math.random();
+                    if (rand < 0.5) {
+                        currentArray[i] = targetArray[i];
+                        changed++;
+                    } else if (rand < 0.8) {
+                        currentArray[i] = getRandomChar();
+                        changed++;
+                    }
+                }
+            }
+            
+            logoText.textContent = currentArray.join('');
+            reassembleFrameCount++;
+            
+            // Check if fully reassembled
+            if (currentArray.join('') === targetText) {
+                if (reassembleInterval) {
+                    clearInterval(reassembleInterval);
+                    reassembleInterval = null;
+                }
+                logoText.textContent = targetText;
+                return;
+            }
+            
+            // Safety: ensure we show target text after enough frames
+            if (reassembleFrameCount > 15) {
+                if (reassembleInterval) {
+                    clearInterval(reassembleInterval);
+                    reassembleInterval = null;
+                }
+                logoText.textContent = targetText;
+                return;
+            }
+        }
+        
+        // Start reassembly animation
+        reassemble();
+        reassembleInterval = setInterval(reassemble, 200);
     }
 
     function showEasterEgg() {
@@ -884,6 +1032,104 @@ function initializeLogoScrambling() {
 
     // Initialize: show easter egg occasionally on page load
     showEasterEgg();
+
+    // Trigger glitch animation on page load/refresh
+    function triggerLoadGlitch() {
+        var loadIsHovering = true;
+        var loadCurrentText = originalText;
+        var loadFrameCount = 0;
+        var loadGlitchInterval = null;
+        var isReassembling = false;
+        var reassembleFrameCount = 0;
+        
+        function loadGlitch() {
+            // Phase 1: Glitch out (first ~2 seconds)
+            if (loadFrameCount < 10 && !isReassembling) {
+                const textArray = logoText.textContent.split('');
+                let changed = 0;
+                const maxChanges = 2;
+                
+                // Gradually morph characters
+                for (let i = 0; i < textArray.length && changed < maxChanges; i++) {
+                    if (textArray[i] === ' ') continue;
+                    
+                    if (Math.random() < 0.25) {
+                        textArray[i] = getRandomChar();
+                        changed++;
+                    }
+                }
+                
+                logoText.textContent = textArray.join('');
+                loadFrameCount++;
+            }
+            // Phase 2: Smoothly reassemble (after ~2 seconds)
+            else {
+                if (!isReassembling) {
+                    isReassembling = true;
+                    reassembleFrameCount = 0;
+                }
+                
+                const currentArray = logoText.textContent.split('');
+                const targetArray = originalText.split('');
+                let changed = 0;
+                const maxChanges = 2;
+                
+                // Gradually reveal correct characters
+                for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                    if (currentArray[i] === ' ') continue;
+                    
+                    // If character doesn't match target, gradually reveal it
+                    if (currentArray[i] !== targetArray[i]) {
+                        // 40% chance to reveal correct character, 30% chance for random char, 30% stay same
+                        var rand = Math.random();
+                        if (rand < 0.4) {
+                            currentArray[i] = targetArray[i];
+                            changed++;
+                        } else if (rand < 0.7) {
+                            currentArray[i] = getRandomChar();
+                            changed++;
+                        }
+                    }
+                }
+                
+                logoText.textContent = currentArray.join('');
+                reassembleFrameCount++;
+                
+                // Check if fully reassembled
+                if (currentArray.join('') === originalText) {
+                    if (loadGlitchInterval) {
+                        clearInterval(loadGlitchInterval);
+                        loadGlitchInterval = null;
+                    }
+                    logoText.textContent = originalText;
+                    loadCurrentText = originalText;
+                    loadIsHovering = false;
+                    return;
+                }
+                
+                // Safety: ensure we show original text after enough frames
+                if (reassembleFrameCount > 20) {
+                    if (loadGlitchInterval) {
+                        clearInterval(loadGlitchInterval);
+                        loadGlitchInterval = null;
+                    }
+                    logoText.textContent = originalText;
+                    loadCurrentText = originalText;
+                    loadIsHovering = false;
+                    return;
+                }
+            }
+        }
+        
+        // Start glitch animation
+        loadGlitch();
+        loadGlitchInterval = setInterval(loadGlitch, 200);
+    }
+    
+    // Trigger glitch on page load with small delay
+    setTimeout(function() {
+        triggerLoadGlitch();
+    }, 300);
 
     // Also occasionally change it while user is on the page (every 30-60 seconds)
     setInterval(() => {
@@ -914,6 +1160,34 @@ function initializeLogoScrambling() {
 
 // Note: initializeLogoScrambling is called after sidebar component loads
 // No need to initialize on DOMContentLoaded since sidebar is always loaded dynamically
+
+// Update scroll shadows for works list
+function updateWorksListScrollShadows() {
+    'use strict';
+    var worksList = document.querySelector('.works-list');
+    if (!worksList) return;
+    
+    var scrollTop = worksList.scrollTop;
+    var scrollHeight = worksList.scrollHeight;
+    var clientHeight = worksList.clientHeight;
+    var isScrollable = scrollHeight > clientHeight;
+    
+    if (isScrollable) {
+        if (scrollTop > 0) {
+            worksList.classList.add('scrollable-top');
+        } else {
+            worksList.classList.remove('scrollable-top');
+        }
+        
+        if (scrollTop < scrollHeight - clientHeight - 1) {
+            worksList.classList.add('scrollable-bottom');
+        } else {
+            worksList.classList.remove('scrollable-bottom');
+        }
+    } else {
+        worksList.classList.remove('scrollable-top', 'scrollable-bottom');
+    }
+}
 
 // Project filtering system - can be called multiple times for dynamic components
 function initializeFiltering() {
@@ -1106,6 +1380,20 @@ function initializeFiltering() {
     updateFilters();
     updateProjectTags();
     
+    // Add scroll listener to update shadows
+    var worksList = document.querySelector('.works-list');
+    if (worksList) {
+        worksList.addEventListener('scroll', updateWorksListScrollShadows, { passive: true });
+        
+        // Initial check
+        setTimeout(function() {
+            updateWorksListScrollShadows();
+        }, 100);
+        
+        // Also check on resize and filter changes
+        window.addEventListener('resize', updateWorksListScrollShadows, { passive: true });
+    }
+    
     // Set active project in sidebar based on current page
     function setActiveProject() {
         const currentPath = window.location.pathname;
@@ -1179,6 +1467,33 @@ function initializeFilterToggle() {
     const savedFilterState = localStorage.getItem('worksFilterCollapsed');
     const isMobile = window.innerWidth <= 768;
     
+    // Helper function to update fixed sections (condense when filter panel is open)
+    const updateFixedSections = () => {
+        if (window.innerWidth <= 768) {
+            const worksSection = document.querySelector('.works-section');
+            const fixedSections = document.querySelectorAll('.fixed-section');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (worksSection && fixedSections.length > 0) {
+                const isCollapsed = worksSection.classList.contains('filter-collapsed');
+                
+                if (!isCollapsed) {
+                    // Filter panel is open - condense fixed sections
+                    sidebar.classList.add('filter-panel-open');
+                } else {
+                    // Filter panel is closed - expand fixed sections
+                    sidebar.classList.remove('filter-panel-open');
+                }
+            }
+        } else {
+            // Desktop - always expanded
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('filter-panel-open');
+            }
+        }
+    };
+    
     if (savedFilterState !== null) {
         // Use saved state
         if (savedFilterState === 'true') {
@@ -1195,7 +1510,10 @@ function initializeFilterToggle() {
         }
     }
     
-    worksFilterToggle.addEventListener('click', (e) => {
+    // Update fixed sections based on initial state
+    updateFixedSections();
+    
+        worksFilterToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -1204,6 +1522,9 @@ function initializeFilterToggle() {
         // Save state to localStorage
         const isCollapsed = worksSection.classList.contains('filter-collapsed');
         localStorage.setItem('worksFilterCollapsed', isCollapsed.toString());
+        
+        // Update fixed sections based on new state
+        updateFixedSections();
         
         // Trigger haptic feedback
         if (window.triggerHapticFeedback) {
@@ -1228,6 +1549,8 @@ function initializeFilterToggle() {
                 // Desktop - always expanded
                 worksSection.classList.remove('filter-collapsed');
             }
+            // Update fixed sections on resize
+            updateFixedSections();
         }, 100);
     });
 }
@@ -1259,7 +1582,7 @@ function initializeSorting() {
             
             const sortType = newButton.getAttribute('data-sort');
             
-            // Toggle direction if clicking the same sort button
+            // If clicking the currently active button, toggle its direction
             if (currentSort === sortType) {
                 const currentDir = newButton.getAttribute('data-direction');
                 const newDirection = currentDir === 'asc' ? 'desc' : 'asc';
@@ -1267,15 +1590,16 @@ function initializeSorting() {
                 currentDirection = newDirection;
                 updateSortButtonIcon(newButton, sortType, currentDirection);
             } else {
-                // Switch to different sort type, use its current direction
+                // Switch to different sort type - immediately activate
                 currentSort = sortType;
                 currentDirection = newButton.getAttribute('data-direction');
-                // Update all buttons to reflect current state
+                // Update button states immediately
+                updateSortButtons(sortType);
                 updateAllSortButtonIcons();
             }
             
-            applySort(sortType, currentDirection);
-            updateSortButtons(sortType);
+            // Always apply the sort immediately (no delay, no conditions)
+            applySort(currentSort, currentDirection);
             
             return false; // Additional prevention
         });
@@ -1289,7 +1613,7 @@ function initializeSorting() {
                 
                 const sortType = newButton.getAttribute('data-sort');
                 
-                // Toggle direction if clicking the same sort button
+                // If pressing the currently active button, toggle its direction
                 if (currentSort === sortType) {
                     const currentDir = newButton.getAttribute('data-direction');
                     const newDirection = currentDir === 'asc' ? 'desc' : 'asc';
@@ -1297,15 +1621,16 @@ function initializeSorting() {
                     currentDirection = newDirection;
                     updateSortButtonIcon(newButton, sortType, currentDirection);
                 } else {
-                    // Switch to different sort type
+                    // Switch to different sort type - immediately activate
                     currentSort = sortType;
                     currentDirection = newButton.getAttribute('data-direction');
-                    // Update all buttons to reflect current state
+                    // Update button states immediately
+                    updateSortButtons(sortType);
                     updateAllSortButtonIcons();
                 }
                 
-                applySort(sortType, currentDirection);
-                updateSortButtons(sortType);
+                // Always apply the sort immediately
+                applySort(currentSort, currentDirection);
                 
                 return false; // Additional prevention
             }
@@ -1315,7 +1640,7 @@ function initializeSorting() {
     // Set initial button states
     updateAllSortButtonIcons();
     
-    // Apply initial sort if projects list exists
+    // Apply initial sort if projects list exists (skip animation on initial load)
     const worksList = document.querySelector('.works-list');
     if (worksList && worksList.children.length > 0) {
         // Load projects data if not already loaded
@@ -1323,7 +1648,8 @@ function initializeSorting() {
             if (data && data.projects) {
                 // projectsData is a global variable from Project Data System
                 const worksProjects = data.projects.filter(p => p.category === 'works');
-                applySort(currentSort, currentDirection, worksProjects);
+                // Skip animation on initial load to prevent jarring rearrangement
+                applySort(currentSort, currentDirection, worksProjects, true);
                 updateSortButtons(currentSort);
             }
         }).catch(err => {
@@ -1392,7 +1718,7 @@ function updateSortButtons(activeSort) {
     });
 }
 
-function applySort(sortType, direction = 'asc', projectsArray = null) {
+function applySort(sortType, direction = 'asc', projectsArray = null, skipAnimation = false) {
     const worksList = document.querySelector('.works-list');
     if (!worksList) return;
     
@@ -1456,10 +1782,42 @@ function applySort(sortType, direction = 'asc', projectsArray = null) {
         });
     }
     
-    // Re-append items in sorted order
-    itemsWithSortValue.forEach(({ item }) => {
-        worksList.appendChild(item);
+    // If skipping animation (initial load), just reorder without animation
+    if (skipAnimation) {
+        itemsWithSortValue.forEach(function({ item }) {
+            worksList.appendChild(item);
+        });
+        // Update scroll shadows immediately
+        setTimeout(function() {
+            updateWorksListScrollShadows();
+        }, 50);
+        return;
+    }
+    
+    // Re-append items in sorted order with smooth transition
+    // First, add transition class to all items
+    visibleItems.forEach(function(item) {
+        item.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        item.style.opacity = '0.5';
+        item.style.transform = 'translateY(-10px)';
     });
+    
+    // Small delay to allow fade-out
+    setTimeout(function() {
+        itemsWithSortValue.forEach(function({ item }, index) {
+            // Stagger the animation slightly for calming effect
+            setTimeout(function() {
+                worksList.appendChild(item);
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 20); // 20ms delay between each item
+        });
+        
+        // Update scroll shadows after sorting animation completes
+        setTimeout(function() {
+            updateWorksListScrollShadows();
+        }, 100 + (itemsWithSortValue.length * 20));
+    }, 50);
     
     // Note: Active project highlighting is handled by initializeFiltering
     // which calls setActiveProject after filtering
@@ -1468,13 +1826,12 @@ function applySort(sortType, direction = 'asc', projectsArray = null) {
 
 // Featured Work slow-motion calming glitch effect on hover
 document.addEventListener('DOMContentLoaded', function() {
-    const featuredWorkSection = document.querySelector('.featured-work .section-header');
-    const featuredWorkLink = document.querySelector('.featured-work .section-link');
+    const featuredWorkCta = document.getElementById('featuredWorkCta');
     const featuredWorkSpan = document.getElementById('featuredWorkText');
     
-    if (!featuredWorkSection || !featuredWorkLink || !featuredWorkSpan) return;
+    if (!featuredWorkCta || !featuredWorkSpan) return;
     
-    const originalText = 'FEATURED WORK';
+    const originalText = 'SEE ALL WORK';
     const targetText = 'SEE ALL WORKS';
     const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     // ASCII block characters for terminal aesthetic
@@ -1507,17 +1864,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const targetArray = targetText.split('');
         const currentArray = currentText.split('');
         
-        // Only change 1-2 characters at a time for calming effect
+        // Only change 1 character at a time for very calming effect
         let changed = 0;
-        const maxChanges = 2;
+        const maxChanges = 1;
         
         // Gradually reveal target text, character by character
         for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
             if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
-                // 30% chance to change this character (slower, more deliberate)
-                if (Math.random() < 0.3) {
+                // 20% chance to change this character (much slower, more deliberate)
+                if (Math.random() < 0.2) {
                     // Sometimes show target char, sometimes random char
-                    if (Math.random() < 0.6) {
+                    if (Math.random() < 0.65) {
                         currentArray[i] = targetArray[i];
                     } else {
                         currentArray[i] = getRandomChar();
@@ -1531,8 +1888,8 @@ document.addEventListener('DOMContentLoaded', function() {
         featuredWorkSpan.textContent = currentText;
         frameCount++;
         
-        // After enough frames, ensure we show target text
-        if (frameCount > 15 && currentText !== targetText) {
+        // After enough frames, ensure we show target text (slower reveal)
+        if (frameCount > 25 && currentText !== targetText) {
             featuredWorkSpan.textContent = targetText;
             currentText = targetText;
             if (scrambleInterval) {
@@ -1548,11 +1905,11 @@ document.addEventListener('DOMContentLoaded', function() {
         frameCount = 0;
         charIndex = 0;
         
-        // Start slow glitch - 200ms interval (much slower than 50ms)
+        // Start slow glitch - 300ms interval (slower, more calming)
         slowGlitch();
-        scrambleInterval = setInterval(slowGlitch, 200);
+        scrambleInterval = setInterval(slowGlitch, 300);
         
-        // After 600ms, ensure target text is shown (longer, more calming)
+        // After 1.2 seconds, ensure target text is shown (longer, more calming)
         setTimeout(() => {
             if (scrambleInterval) {
                 clearInterval(scrambleInterval);
@@ -1562,7 +1919,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 featuredWorkSpan.textContent = targetText;
                 currentText = targetText;
             }
-        }, 600);
+        }, 1200);
     }
     
     function stopScrambling() {
@@ -1571,24 +1928,103 @@ document.addEventListener('DOMContentLoaded', function() {
             clearInterval(scrambleInterval);
             scrambleInterval = null;
         }
-        featuredWorkSpan.textContent = originalText;
-        currentText = originalText;
-        frameCount = 0;
+        
+        // Keep current state (target text), then slowly glitch back to original
+        // First ensure we're showing the target text if we're not already
+        var currentDisplayText = featuredWorkSpan.textContent;
+        if (currentDisplayText !== targetText) {
+            featuredWorkSpan.textContent = targetText;
+            currentText = targetText;
+        }
+        
+        // Small delay before starting glitch back
+        setTimeout(function() {
+            var glitchBackInterval = null;
+            var glitchBackFrameCount = 0;
+            
+            function glitchBack() {
+                const currentArray = featuredWorkSpan.textContent.split('');
+                const targetArray = originalText.split('');
+                let changed = 0;
+                const maxChanges = 1; // Only 1 character at a time for calming effect
+                
+                // Gradually reveal original text characters
+                for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                    if (currentArray[i] === ' ') continue;
+                    
+                    // If character doesn't match original, gradually reveal it
+                    if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
+                        // 20% chance to change this character (slow, deliberate)
+                        if (Math.random() < 0.2) {
+                            // Sometimes show original char, sometimes random char
+                            if (Math.random() < 0.65) {
+                                currentArray[i] = targetArray[i];
+                            } else {
+                                currentArray[i] = getRandomChar();
+                            }
+                            changed++;
+                        }
+                    }
+                }
+                
+                featuredWorkSpan.textContent = currentArray.join('');
+                glitchBackFrameCount++;
+                
+                // Check if fully reassembled to original
+                if (currentArray.join('') === originalText) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    featuredWorkSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+                
+                // Safety: ensure we show original text after enough frames
+                if (glitchBackFrameCount > 30) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    featuredWorkSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+            }
+            
+            // Start glitch back animation (slower, more calming)
+            glitchBack();
+            glitchBackInterval = setInterval(glitchBack, 300);
+        }, 200); // Small delay to keep target text visible
     }
     
-    // Add hover listeners to the entire section header
-    featuredWorkSection.addEventListener('mouseenter', startScrambling);
-    featuredWorkSection.addEventListener('mouseleave', stopScrambling);
-    featuredWorkLink.addEventListener('focus', startScrambling);
-    featuredWorkLink.addEventListener('blur', stopScrambling);
+    // Desktop: hover on CTA
+    featuredWorkCta.addEventListener('mouseenter', startScrambling);
+    featuredWorkCta.addEventListener('mouseleave', stopScrambling);
+    featuredWorkCta.addEventListener('focus', startScrambling);
+    featuredWorkCta.addEventListener('blur', stopScrambling);
+    
+    // Mobile: tap on CTA
+    featuredWorkCta.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        startScrambling();
+        setTimeout(function() {
+            stopScrambling();
+        }, 2000);
+    }, { passive: false });
 });
 
-// About section slow-motion calming glitch effect on hover
+// About section slow-motion calming glitch effect on hover (removed - about section no longer in main content)
+// This code is kept for potential future use but currently disabled
 document.addEventListener('DOMContentLoaded', function() {
     const aboutSection = document.querySelector('.about-section .section-header');
     const aboutLink = document.querySelector('.about-section .section-link');
     const aboutSpan = document.getElementById('aboutText');
     
+    // Skip if about section doesn't exist (removed from main content)
     if (!aboutSection || !aboutLink || !aboutSpan) return;
     
     const originalText = 'ABOUT ME';
@@ -1624,17 +2060,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const targetArray = targetText.split('');
         const currentArray = currentText.split('');
         
-        // Only change 1-2 characters at a time for calming effect
+        // Only change 1 character at a time for very calming effect
         let changed = 0;
-        const maxChanges = 2;
+        const maxChanges = 1;
         
         // Gradually reveal target text, character by character
         for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
             if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
-                // 30% chance to change this character (slower, more deliberate)
-                if (Math.random() < 0.3) {
+                // 20% chance to change this character (much slower, more deliberate)
+                if (Math.random() < 0.2) {
                     // Sometimes show target char, sometimes random char
-                    if (Math.random() < 0.6) {
+                    if (Math.random() < 0.65) {
                         currentArray[i] = targetArray[i];
                     } else {
                         currentArray[i] = getRandomChar();
@@ -1648,8 +2084,8 @@ document.addEventListener('DOMContentLoaded', function() {
         aboutSpan.textContent = currentText;
         frameCount++;
         
-        // After enough frames, ensure we show target text
-        if (frameCount > 12 && currentText !== targetText) {
+        // After enough frames, ensure we show target text (slower reveal)
+        if (frameCount > 25 && currentText !== targetText) {
             aboutSpan.textContent = targetText;
             currentText = targetText;
             if (scrambleInterval) {
@@ -1665,11 +2101,11 @@ document.addEventListener('DOMContentLoaded', function() {
         frameCount = 0;
         charIndex = 0;
         
-        // Start slow glitch - 200ms interval (much slower than 50ms)
+        // Start slow glitch - 300ms interval (slower, more calming)
         slowGlitch();
-        scrambleInterval = setInterval(slowGlitch, 200);
+        scrambleInterval = setInterval(slowGlitch, 300);
         
-        // After 500ms, ensure target text is shown (longer, more calming)
+        // After 1.2 seconds, ensure target text is shown (longer, more calming)
         setTimeout(() => {
             if (scrambleInterval) {
                 clearInterval(scrambleInterval);
@@ -1679,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 aboutSpan.textContent = targetText;
                 currentText = targetText;
             }
-        }, 500);
+        }, 1200);
     }
     
     function stopScrambling() {
@@ -1688,9 +2124,77 @@ document.addEventListener('DOMContentLoaded', function() {
             clearInterval(scrambleInterval);
             scrambleInterval = null;
         }
-        aboutSpan.textContent = originalText;
-        currentText = originalText;
-        frameCount = 0;
+        
+        // Keep current state (target text), then slowly glitch back to original
+        // First ensure we're showing the target text if we're not already
+        var currentDisplayText = aboutSpan.textContent;
+        if (currentDisplayText !== targetText) {
+            aboutSpan.textContent = targetText;
+            currentText = targetText;
+        }
+        
+        // Small delay before starting glitch back
+        setTimeout(function() {
+            var glitchBackInterval = null;
+            var glitchBackFrameCount = 0;
+            
+            function glitchBack() {
+                const currentArray = aboutSpan.textContent.split('');
+                const targetArray = originalText.split('');
+                let changed = 0;
+                const maxChanges = 1; // Only 1 character at a time for calming effect
+                
+                // Gradually reveal original text characters
+                for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                    if (currentArray[i] === ' ') continue;
+                    
+                    // If character doesn't match original, gradually reveal it
+                    if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
+                        // 20% chance to change this character (slow, deliberate)
+                        if (Math.random() < 0.2) {
+                            // Sometimes show original char, sometimes random char
+                            if (Math.random() < 0.65) {
+                                currentArray[i] = targetArray[i];
+                            } else {
+                                currentArray[i] = getRandomChar();
+                            }
+                            changed++;
+                        }
+                    }
+                }
+                
+                aboutSpan.textContent = currentArray.join('');
+                glitchBackFrameCount++;
+                
+                // Check if fully reassembled to original
+                if (currentArray.join('') === originalText) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    aboutSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+                
+                // Safety: ensure we show original text after enough frames
+                if (glitchBackFrameCount > 30) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    aboutSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+            }
+            
+            // Start glitch back animation (slower, more calming)
+            glitchBack();
+            glitchBackInterval = setInterval(glitchBack, 300);
+        }, 200); // Small delay to keep target text visible
     }
     
     // Add hover listeners to the entire section header
@@ -1698,6 +2202,242 @@ document.addEventListener('DOMContentLoaded', function() {
     aboutSection.addEventListener('mouseleave', stopScrambling);
     aboutLink.addEventListener('focus', startScrambling);
     aboutLink.addEventListener('blur', stopScrambling);
+});
+
+// Pandji name glitch effect - reveal "Andrew Pandji" on hover
+document.addEventListener('DOMContentLoaded', function() {
+    const pandjiNameSpan = document.getElementById('pandjiName');
+    const homeHeader = document.querySelector('.home-header');
+    
+    if (!pandjiNameSpan || !homeHeader) return;
+    
+    const originalText = 'Pandji';
+    const targetText = 'Andrew';
+    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    // ASCII block characters for terminal aesthetic
+    const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+    // Special characters prioritized
+    const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
+    let currentText = originalText;
+    let scrambleInterval = null;
+    let isHovering = false;
+    let frameCount = 0;
+    
+    function getRandomChar() {
+        const rand = Math.random();
+        // 50% chance for blocks
+        if (rand < 0.5) {
+            return blockChars[Math.floor(Math.random() * blockChars.length)];
+        }
+        // 30% chance for special characters
+        else if (rand < 0.8) {
+            return specialChars[Math.floor(Math.random() * specialChars.length)];
+        }
+        // 20% chance for regular alphanumeric
+        return codeChars[Math.floor(Math.random() * codeChars.length)];
+    }
+    
+    function slowGlitch() {
+        if (!isHovering) return;
+        
+        const targetArray = targetText.split('');
+        const currentArray = currentText.split('');
+        
+        // Change 1-2 characters at a time for snappier but still calming effect
+        let changed = 0;
+        const maxChanges = Math.random() < 0.4 ? 2 : 1; // 40% chance for 2 changes
+        
+        // Gradually reveal target text, character by character
+        for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+            if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
+                // 35% chance to change this character (snappier but still deliberate)
+                if (Math.random() < 0.35) {
+                    // Sometimes show target char, sometimes random char
+                    if (Math.random() < 0.7) {
+                        currentArray[i] = targetArray[i];
+                    } else {
+                        currentArray[i] = getRandomChar();
+                    }
+                    changed++;
+                }
+            }
+        }
+        
+        // Handle case where target is longer than current
+        if (currentArray.length < targetArray.length && changed < maxChanges) {
+            if (Math.random() < 0.35) {
+                currentArray.push(targetArray[currentArray.length]);
+                changed++;
+            }
+        }
+        
+        currentText = currentArray.join('');
+        pandjiNameSpan.textContent = currentText;
+        frameCount++;
+        
+        // After fewer frames, ensure we show target text (snappier reveal)
+        if (frameCount > 15 && currentText !== targetText) {
+            pandjiNameSpan.textContent = targetText;
+            currentText = targetText;
+            if (scrambleInterval) {
+                clearInterval(scrambleInterval);
+                scrambleInterval = null;
+            }
+        }
+    }
+    
+    function startScrambling() {
+        isHovering = true;
+        frameCount = 0;
+        currentText = pandjiNameSpan.textContent;
+        
+        if (scrambleInterval) {
+            clearInterval(scrambleInterval);
+        }
+        
+        // Start glitch animation - snappier timing
+        slowGlitch();
+        scrambleInterval = setInterval(slowGlitch, 200); // Faster interval for snappier feel
+    }
+    
+    function stopScrambling() {
+        isHovering = false;
+        if (scrambleInterval) {
+            clearInterval(scrambleInterval);
+            scrambleInterval = null;
+        }
+        
+        // Keep current state (target text), then slowly glitch back to original
+        // First ensure we're showing the target text if we're not already
+        var currentDisplayText = pandjiNameSpan.textContent;
+        if (currentDisplayText !== targetText) {
+            pandjiNameSpan.textContent = targetText;
+            currentText = targetText;
+        }
+        
+        // Small delay before starting glitch back
+        setTimeout(function() {
+            var glitchBackInterval = null;
+            var glitchBackFrameCount = 0;
+            
+            function glitchBack() {
+                const currentArray = pandjiNameSpan.textContent.split('');
+                const targetArray = originalText.split('');
+                let changed = 0;
+                const maxChanges = Math.random() < 0.4 ? 2 : 1; // 40% chance for 2 changes
+                
+                // Gradually reveal original text characters
+                for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                    if (currentArray[i] === ' ') continue;
+                    
+                    // If character doesn't match original, gradually reveal it
+                    if (i < targetArray.length && currentArray[i] !== targetArray[i]) {
+                        // 30% chance to change this character (snappier but still deliberate)
+                        if (Math.random() < 0.3) {
+                            // Sometimes show original char, sometimes random char
+                            if (Math.random() < 0.7) {
+                                currentArray[i] = targetArray[i];
+                            } else {
+                                currentArray[i] = getRandomChar();
+                            }
+                            changed++;
+                        }
+                    } else if (i >= targetArray.length) {
+                        // Remove extra characters
+                        if (Math.random() < 0.3) {
+                            currentArray.splice(i, 1);
+                            changed++;
+                            i--; // Adjust index after removal
+                        }
+                    }
+                }
+                
+                pandjiNameSpan.textContent = currentArray.join('');
+                glitchBackFrameCount++;
+                
+                // Check if fully reassembled to original
+                if (currentArray.join('') === originalText) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    pandjiNameSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+                
+                // Safety: ensure we show original text after enough frames
+                if (glitchBackFrameCount > 20) {
+                    if (glitchBackInterval) {
+                        clearInterval(glitchBackInterval);
+                        glitchBackInterval = null;
+                    }
+                    pandjiNameSpan.textContent = originalText;
+                    currentText = originalText;
+                    frameCount = 0;
+                    return;
+                }
+            }
+            
+            // Start glitch back animation (snappier but still calming)
+            glitchBack();
+            glitchBackInterval = setInterval(glitchBack, 200);
+        }, 150); // Shorter delay for snappier feel
+    }
+    
+    // Add hover listeners to the name span
+    // Desktop: hover to trigger name switching
+    pandjiNameSpan.addEventListener('mouseenter', startScrambling);
+    pandjiNameSpan.addEventListener('mouseleave', stopScrambling);
+    pandjiNameSpan.style.cursor = 'pointer'; // Indicate it's interactive
+    
+    // Mobile: tap to trigger name switching
+    let isToggled = false;
+    pandjiNameSpan.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        if (!isToggled) {
+            startScrambling();
+            isToggled = true;
+            // After animation completes, toggle back
+            setTimeout(function() {
+                stopScrambling();
+                setTimeout(function() {
+                    isToggled = false;
+                }, 2000); // Allow time for glitch back animation
+            }, 1000);
+        }
+    }, { passive: false });
+    
+    // Add click handler to navigate to about me section in sidebar
+    pandjiNameSpan.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Find the about me section in the sidebar
+        const fixedSections = document.querySelectorAll('.sidebar .fixed-section');
+        let aboutMeSection = null;
+        
+        for (let i = 0; i < fixedSections.length; i++) {
+            const linkText = fixedSections[i].querySelector('.nav-section-link');
+            if (linkText && linkText.textContent.trim().toLowerCase() === 'about me') {
+                aboutMeSection = fixedSections[i];
+                break;
+            }
+        }
+        
+        if (aboutMeSection) {
+            // Scroll sidebar to show the about me section
+            aboutMeSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Add a subtle highlight effect on the title
+            const navTitle = aboutMeSection.querySelector('.nav-section-title');
+            if (navTitle) {
+                navTitle.style.transition = 'background-color 0.3s ease';
+                navTitle.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                setTimeout(function() {
+                    navTitle.style.backgroundColor = '';
+                }, 1000);
+            }
+        }
+    });
 });
 
 // Auto-load components on page load
@@ -1737,7 +2477,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Also try after a short delay as backup
     setTimeout(function() {
         var sidebar = document.getElementById('sidebar');
-        var menu = document.getElementById('mobileMenuToggle');
         if (!sidebar && document.body) {
             console.log('Delayed initialization - sidebar missing');
             initComponents();
@@ -1747,85 +2486,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadComponentsMain() {
     // Determine base path based on current page location
+    // For GitHub Pages compatibility: handle both root and subdirectory deployments
     const pathname = window.location.pathname;
-    const isSubdirectory = pathname.includes('/works/') || pathname.split('/').filter(Boolean).length > 1;
-    const basePath = isSubdirectory ? '../' : '';
+    const pathParts = pathname.split('/').filter(function(part) {
+        return part && part !== 'index.html';
+    });
+    
+    // Check if we're in a subdirectory (like /works/)
+    const isInSubdirectory = pathname.includes('/works/');
+    
+    // Calculate basePath: go up one level for each directory we're in
+    let basePath = '';
+    if (isInSubdirectory) {
+        // We're in /works/ subdirectory, need to go up one level
+        basePath = '../';
+    } else if (pathParts.length > 0) {
+        // We're in a GitHub Pages subdirectory (e.g., /username/repo/)
+        // Count how many levels deep we are (excluding the filename)
+        const depth = pathParts.length;
+        if (depth > 0) {
+            basePath = '../'.repeat(depth);
+        }
+    }
     
     console.log('Loading components with basePath: ' + basePath + ', pathname: ' + pathname);
     
     // Only load components if they don't already exist
     const sidebarExists = document.getElementById('sidebar');
-    const mobileMenuExists = document.getElementById('mobileMenuToggle');
-    
-    if (!mobileMenuExists && window.innerWidth <= 768) {
-        console.log('Loading mobile-menu component...');
-        // Retry logic for mobile menu loading
-        let retries = 3;
-        let loaded = false;
-        
-        while (retries > 0 && !loaded) {
-            try {
-                const result = await loadComponent('mobile-menu', 'afterBegin', { basePath });
-                if (result) {
-                    // Verify it was actually inserted
-                    const menuElement = document.getElementById('mobileMenuToggle');
-                    if (menuElement) {
-                        console.log('Mobile menu loaded successfully');
-                        loaded = true;
-                        // Ensure Lucide icons are initialized
-                        if (typeof lucide !== 'undefined') {
-                            setTimeout(() => {
-                                lucide.createIcons();
-                            }, 100);
-                        }
-                    } else {
-                        throw new Error('Mobile menu element not found after load');
-                    }
-                } else {
-                    throw new Error('loadComponent returned false');
-                }
-            } catch (err) {
-                console.error('Error loading mobile-menu (' + retries + ' retries left):', err);
-                retries--;
-                if (retries > 0) {
-                    // Wait before retrying
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-        }
-        
-        if (!loaded) {
-            console.error('Failed to load mobile menu after all retries');
-            // Show JS failure indicator
-            if (typeof showJSFailureIndicator === 'function') {
-                showJSFailureIndicator('Mobile menu failed to load');
-            }
-        }
-    } else if (mobileMenuExists) {
-        console.log('Mobile menu already exists');
-    }
     
     // Add resize listener to handle orientation changes
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile && !mobileMenuToggle) {
-                console.log('Window resized to mobile, loading mobile menu...');
-                loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
-                    if (result) {
-                        const menuElement = document.getElementById('mobileMenuToggle');
-                        if (menuElement && typeof lucide !== 'undefined') {
-                            setTimeout(() => {
-                                lucide.createIcons();
-                                initializeMobileMenu();
-                            }, 100);
-                        }
-                    }
-                });
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebarToggle && typeof initializeSidebarToggle === 'function') {
+                initializeSidebarToggle();
             }
         }, 250);
     });
@@ -1838,59 +2534,41 @@ async function loadComponentsMain() {
                 console.log('Sidebar loaded successfully');
             } else {
                 console.error('Sidebar failed to load');
+                // Show content even if sidebar fails to load
+                const mainContent = document.querySelector('.content');
+                if (mainContent) {
+                    setTimeout(function() {
+                        mainContent.classList.add('loaded');
+                    }, 300);
+                }
             }
         } catch (err) {
             console.error('Error loading sidebar:', err);
+            // Show content even if sidebar fails to load
+            const mainContent = document.querySelector('.content');
+            if (mainContent) {
+                setTimeout(function() {
+                    mainContent.classList.add('loaded');
+                }, 300);
+            }
         }
     } else {
         console.log('Sidebar already exists');
+        // If sidebar already exists, show content after a brief delay
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.content');
+        if (sidebar && mainContent) {
+            setTimeout(function() {
+                sidebar.classList.add('loaded');
+                setTimeout(function() {
+                    mainContent.classList.add('loaded');
+                }, 150);
+            }, 50);
+        }
     }
     
     // Load projects data and initialize project system
     initializeProjectSystem(basePath);
-    
-    // Periodic check to ensure mobile menu exists (backup safety net)
-    if (window.innerWidth <= 768) {
-        setInterval(() => {
-            const menuExists = document.getElementById('mobileMenuToggle');
-            const sidebarExists = document.getElementById('sidebar');
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile && sidebarExists && !menuExists) {
-                console.warn('Mobile menu missing, attempting recovery...');
-                // Try to reload the component
-                if (typeof loadComponent === 'function') {
-                    loadComponent('mobile-menu', 'afterBegin', { basePath: basePath }).then(function(result) {
-                        if (result) {
-                            setTimeout(function() {
-                                if (typeof lucide !== 'undefined') {
-                                    lucide.createIcons();
-                                }
-                                if (typeof initializeMobileMenu === 'function') {
-                                    initializeMobileMenu();
-                                }
-                            }, 100);
-                        } else {
-                            // Show failure indicator if recovery fails
-                            if (typeof showJSFailureIndicator === 'function') {
-                                showJSFailureIndicator('Mobile menu recovery failed');
-                            }
-                        }
-                    }).catch(function(err) {
-                        console.error('Recovery attempt failed:', err);
-                        if (typeof showJSFailureIndicator === 'function') {
-                            showJSFailureIndicator('Mobile menu recovery failed');
-                        }
-                    });
-                } else {
-                    // loadComponent not available - show failure indicator
-                    if (typeof showJSFailureIndicator === 'function') {
-                        showJSFailureIndicator('JavaScript functions not available');
-                    }
-                }
-            }
-        }, 3000); // Check every 3 seconds
-    }
 }
 
 // ============================================
@@ -1912,8 +2590,15 @@ async function loadProjectsData(basePath) {
     try {
         let response;
         try {
-            response = await fetch(basePath + 'data/projects.json', {
-                cache: 'no-cache',
+            // Ensure basePath ends with / if it's not empty
+            var projectsPath = basePath;
+            if (projectsPath && !projectsPath.endsWith('/') && projectsPath !== '../') {
+                projectsPath += '/';
+            }
+            projectsPath += 'data/projects.json';
+            
+            response = await fetch(projectsPath, {
+                cache: 'default', // Allow browser/service worker caching
                 credentials: 'same-origin'
             });
         } catch (fetchError) {
@@ -1948,7 +2633,13 @@ function loadProjectsDataXHR(basePath) {
     }
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', basePath + 'data/projects.json', true);
+        // Ensure basePath ends with / if it's not empty
+        var projectsPath = basePath;
+        if (projectsPath && !projectsPath.endsWith('/') && projectsPath !== '../') {
+            projectsPath += '/';
+        }
+        projectsPath += 'data/projects.json';
+        xhr.open('GET', projectsPath, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200 || xhr.status === 0) {
@@ -2043,10 +2734,10 @@ function generateSidebarProjectList(projects) {
         worksList.appendChild(li);
     });
     
-    // Apply current sort after generating list
+    // Apply current sort after generating list (skip animation on initial generation)
     setTimeout(() => {
         if (typeof applySort === 'function') {
-            applySort(currentSort, currentDirection, worksProjects);
+            applySort(currentSort, currentDirection, worksProjects, true);
             updateSortButtons(currentSort);
         }
     }, 50);
@@ -2165,64 +2856,397 @@ function updateProjectMetadata(project) {
     }
 }
 
-// Generate featured projects on homepage
+// Generate featured projects on homepage - new carousel structure
 function generateFeaturedProjects(projects) {
     const container = document.getElementById('featuredProjects');
     if (!container) return;
     
-    const featured = getFeaturedProjects();
+    // Use the projects parameter if provided, otherwise fall back to global projectsData
+    const projectsToUse = projects || (projectsData && projectsData.projects) || [];
+    
+    // Filter for specific 5 featured projects in order
+    const featuredIds = ['sail_pattern_lab', 'driftpad', 'ascension_rx', 'sapling', 'weather_aura'];
+    const featured = featuredIds.map(function(id) {
+        return projectsToUse.find(function(p) { return p.id === id; });
+    }).filter(function(p) { return p !== undefined; });
+    
     if (featured.length === 0) {
         container.style.display = 'none';
         return;
     }
     
     container.innerHTML = '';
+    container.className = 'featured-projects-carousel';
     
-    featured.forEach(project => {
-        const article = document.createElement('article');
-        article.className = 'featured-project';
-        
-        const link = document.createElement('a');
-        link.href = `works/${project.slug}.html`;
-        link.className = 'featured-project-link';
-        
-        if (project.image) {
-            const imageDiv = document.createElement('div');
-            imageDiv.className = 'featured-project-image';
-            const img = document.createElement('img');
-            img.src = project.image;
-            img.alt = project.slug;
-            imageDiv.appendChild(img);
-            link.appendChild(imageDiv);
+    // Create progress dots container (mobile)
+    const dotsContainer = document.createElement('div');
+    dotsContainer.className = 'carousel-dots';
+    dotsContainer.setAttribute('aria-hidden', 'true');
+    featured.forEach(function(project, index) {
+        const dot = document.createElement('button');
+        dot.className = 'carousel-dot';
+        dot.setAttribute('data-index', index);
+        dot.setAttribute('aria-label', 'Go to slide ' + (index + 1));
+        if (index === 0) dot.classList.add('active');
+        dotsContainer.appendChild(dot);
+    });
+    container.appendChild(dotsContainer);
+    
+    // Create cards container
+    const cardsContainer = document.createElement('div');
+    cardsContainer.className = 'featured-projects-cards';
+    
+    featured.forEach(function(project, index) {
+        const card = document.createElement('article');
+        card.className = 'featured-project-card';
+        card.setAttribute('data-index', index);
+        // Ensure white border is applied (except first card)
+        if (index > 0) {
+            card.style.borderTop = '1px solid var(--color-white)';
         }
         
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'featured-project-content';
+        const link = document.createElement('a');
+        link.href = 'works/' + project.slug + '.html';
+        link.className = 'featured-project-card-link';
+        link.setAttribute('aria-label', 'View ' + (project.title || project.slug));
         
+        // Image container
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'featured-project-image-container';
+        
+        if (project.image) {
+            const img = document.createElement('img');
+            img.src = project.image;
+            img.alt = project.title || project.slug;
+            img.loading = index < 2 ? 'eager' : 'lazy'; // Load first 2 immediately
+            img.onerror = function() {
+                console.error('Failed to load image:', project.image, 'for project:', project.title);
+                this.style.display = 'none';
+            };
+            imageContainer.appendChild(img);
+        }
+        
+        // Gradient overlay
+        const gradientOverlay = document.createElement('div');
+        gradientOverlay.className = 'featured-project-gradient';
+        imageContainer.appendChild(gradientOverlay);
+        
+        // Blurb container (overlay on image)
+        const blurbContainer = document.createElement('div');
+        blurbContainer.className = 'featured-project-blurb';
+        
+        // Title
         const h3 = document.createElement('h3');
-        h3.textContent = project.slug;
-        contentDiv.appendChild(h3);
+        h3.className = 'featured-project-title';
+        h3.textContent = project.title || project.slug;
+        blurbContainer.appendChild(h3);
         
+        // Description
         if (project.description) {
             const p = document.createElement('p');
             p.className = 'featured-project-description';
             p.textContent = project.description;
-            contentDiv.appendChild(p);
+            blurbContainer.appendChild(p);
         }
         
-        if (project.tags && project.tags.length > 0) {
-            const tagsSpan = document.createElement('span');
-            tagsSpan.className = 'featured-project-tags';
-            tagsSpan.textContent = project.tags.join(', ');
-            contentDiv.appendChild(tagsSpan);
-        }
+        // CTA button (always visible on mobile, revealed on hover desktop)
+        const ctaButton = document.createElement('span');
+        ctaButton.className = 'featured-project-cta';
+        ctaButton.innerHTML = 'SEE PROJECT <i data-lucide="arrow-right" class="cta-icon"></i>';
+        blurbContainer.appendChild(ctaButton);
         
-        link.appendChild(contentDiv);
-        article.appendChild(link);
-        container.appendChild(article);
+        imageContainer.appendChild(blurbContainer);
+        link.appendChild(imageContainer);
+        card.appendChild(link);
+        cardsContainer.appendChild(card);
     });
     
-    console.log('Featured projects generated:', featured.length);
+    container.appendChild(cardsContainer);
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        setTimeout(function() {
+            lucide.createIcons();
+        }, 200);
+    }
+    
+    // Initialize scroll tracking for progress dots (mobile)
+    initializeCarouselScroll(container, dotsContainer);
+    
+    console.log('Featured projects carousel generated:', featured.length);
+}
+
+// Initialize carousel scroll tracking for progress dots and card stack animation
+// SIMPLIFIED VERSION - cards in normal flow with CSS scroll-snap
+function initializeCarouselScroll(container, dotsContainer) {
+    const cardsContainer = container.querySelector('.featured-projects-cards');
+    if (!cardsContainer || !dotsContainer) return;
+    
+    const dots = dotsContainer.querySelectorAll('.carousel-dot');
+    const cards = cardsContainer.querySelectorAll('.featured-project-card');
+    
+    if (window.innerWidth > 768) {
+        // Desktop: use regular scroll tracking
+        function updateActiveDot() {
+            const scrollTop = cardsContainer.scrollTop;
+            const cardHeight = cards[0] ? cards[0].offsetHeight : 0;
+            const activeIndex = Math.round(scrollTop / cardHeight);
+            
+            dots.forEach(function(dot, index) {
+                if (index === activeIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        let scrollTimeout;
+        cardsContainer.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(updateActiveDot, 50);
+        });
+        updateActiveDot();
+        return;
+    }
+    
+    // Mobile: SIMPLIFIED - cards in normal flow, CSS handles snapping
+    let currentIndex = 0;
+    
+    // Simple setup - just ensure cards are in normal flow
+    function setupCards() {
+        if (cards.length === 0) return;
+        
+        // Calculate card height from viewport
+        const viewportHeight = window.innerHeight;
+        const header = document.querySelector('.home-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        const cta = document.getElementById('featuredWorkCta');
+        const ctaHeight = cta ? cta.offsetHeight : 0;
+        const cardHeight = viewportHeight - headerHeight - ctaHeight;
+        
+        
+        if (cardHeight <= 0) return;
+        
+        // Set all cards to same height with border-box
+        cards.forEach(function(card, index) {
+            card.style.position = 'relative'; // Normal flow - SIMPLIFIED
+            card.style.boxSizing = 'border-box';
+            card.style.height = cardHeight + 'px';
+            card.style.minHeight = cardHeight + 'px';
+            card.style.maxHeight = cardHeight + 'px';
+            card.style.margin = '0';
+            card.style.padding = '0';
+            // Remove any transforms - let CSS handle it
+            card.style.transform = 'none';
+            
+        });
+        
+        // Add padding-bottom to container so last card can scroll fully into view
+        // This ensures the CTA on the last card is visible above the fixed "SEE ALL WORK" CTA
+        cardsContainer.style.paddingBottom = ctaHeight + 'px';
+        
+        // Container height is automatic (cards in flow)
+        // CSS scroll-snap handles the snapping
+        
+        return cardHeight;
+    }
+    
+    // Expose recalculation function for layout updates
+    window.recalculateCarousel = function() {
+        setupCards();
+        updateCardStates();
+    };
+    
+    // PHYSICAL CARD CAROUSEL - Simplified for snappy, tactile feel
+    // Let CSS scroll-snap handle the snapping, JS handles visual stacking
+    
+    function updateCardStates() {
+        if (cards.length === 0) return;
+        
+        const scrollTop = cardsContainer.scrollTop;
+        const cardHeight = cards[0].offsetHeight;
+        if (!cardHeight || cardHeight <= 0) return;
+        
+        // Calculate which card we're on based on scroll position
+        const exactIndex = scrollTop / cardHeight;
+        const activeIndex = Math.round(exactIndex);
+        const clampedIndex = Math.max(0, Math.min(activeIndex, cards.length - 1));
+        
+        // How far we've scrolled past the current card's start (0 to 1)
+        const progress = exactIndex - Math.floor(exactIndex);
+        
+        // Update each card's visual state
+        cards.forEach(function(card, index) {
+            card.classList.remove('active', 'prev', 'next');
+            
+            if (index === clampedIndex) {
+                // ACTIVE CARD - sits at top, fully visible
+                card.classList.add('active');
+                card.style.transform = 'translateY(0) scale(1)';
+                card.style.zIndex = String(20);
+                card.style.opacity = '1';
+                card.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.4)';
+                
+            } else if (index === clampedIndex + 1) {
+                // NEXT CARD - slides up from below, stacking on top
+                card.classList.add('next');
+                
+                // Calculate how much to pull up (based on scroll progress)
+                const pullUp = cardHeight * progress;
+                
+                // Slight scale effect as it comes up (starts at 0.98, ends at 1)
+                const scale = 0.98 + (0.02 * progress);
+                
+                card.style.transform = `translateY(${-Math.round(pullUp)}px) scale(${scale.toFixed(3)})`;
+                card.style.zIndex = String(30); // Above active card
+                card.style.opacity = '1';
+                
+                // Shadow intensifies as card rises
+                const shadowIntensity = 0.2 + (0.4 * progress);
+                const shadowBlur = 8 + (24 * progress);
+                card.style.boxShadow = `0 ${-4 - (8 * progress)}px ${shadowBlur}px rgba(0, 0, 0, ${shadowIntensity})`;
+                
+            } else if (index < clampedIndex) {
+                // PREVIOUS CARDS - hidden behind
+                card.classList.add('prev');
+                card.style.transform = 'translateY(-100%) scale(0.95)';
+                card.style.zIndex = String(5 + index);
+                card.style.opacity = '0';
+                card.style.boxShadow = 'none';
+                
+            } else {
+                // FUTURE CARDS - waiting below
+                card.style.transform = 'translateY(0) scale(1)';
+                card.style.zIndex = String(5 + index);
+                card.style.opacity = '1';
+                card.style.boxShadow = 'none';
+            }
+        });
+        
+        // Update dots
+        if (clampedIndex !== currentIndex) {
+            currentIndex = clampedIndex;
+            dots.forEach(function(dot, index) {
+                if (index === currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+    }
+    
+    // Track scroll and update card states for stacking effect
+    let rafId = null;
+    let scrollTimeout = null;
+    let isScrolling = false;
+    let lastScrollTop = 0;
+    
+    function handleScroll() {
+        const currentScrollTop = cardsContainer.scrollTop;
+        
+        // Disable transitions during active scroll to prevent bounce
+        if (!isScrolling) {
+            isScrolling = true;
+            // Ensure scroll behavior is auto for immediate snapping
+            cardsContainer.style.scrollBehavior = 'auto';
+            cards.forEach(function(card) {
+                card.style.transition = 'none';
+            });
+        }
+        
+        // Only update if scroll position changed meaningfully (reduces unnecessary updates)
+        if (Math.abs(currentScrollTop - lastScrollTop) >= 1) {
+            lastScrollTop = currentScrollTop;
+            updateCardStates();
+        }
+    }
+    
+    cardsContainer.addEventListener('scroll', function() {
+        // Use requestAnimationFrame for smooth updates, but throttle it
+        if (!rafId) {
+            rafId = requestAnimationFrame(function() {
+                handleScroll();
+                rafId = null;
+            });
+        }
+        
+        // Clear any pending scroll end timeout
+        if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+        }
+        
+        // Re-enable transitions after scroll ends (but keep scroll-behavior as auto)
+        scrollTimeout = setTimeout(function() {
+            isScrolling = false;
+            // Keep scroll-behavior as auto for immediate snapping
+            cardsContainer.style.scrollBehavior = 'auto';
+            cards.forEach(function(card) {
+                card.style.transition = '';
+            });
+        }, 150);
+    }, { passive: true });
+    
+    // Also handle scrollend event for more reliable detection
+    if ('onscrollend' in window) {
+        cardsContainer.addEventListener('scrollend', function() {
+            const finalScrollTop = cardsContainer.scrollTop;
+            const finalCardHeight = cards[0].offsetHeight;
+            const finalIndex = Math.round(finalScrollTop / finalCardHeight);
+            const expectedSnap = finalIndex * finalCardHeight;
+            
+            isScrolling = false;
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            // Keep scroll-behavior as auto for immediate snapping
+            cardsContainer.style.scrollBehavior = 'auto';
+            cards.forEach(function(card) {
+                card.style.transition = '';
+            });
+            
+            // Force perfect alignment - if scroll position is off, snap it immediately
+            const snapOffset = finalScrollTop - expectedSnap;
+            if (Math.abs(snapOffset) > 1) {
+                cardsContainer.scrollTop = expectedSnap;
+                lastSnappedPosition = expectedSnap;
+            } else {
+                lastSnappedPosition = finalScrollTop;
+            }
+            
+            // Final update to ensure correct state
+            updateCardStates();
+        }, { passive: true });
+    }
+    
+    // Dot click handlers - scroll to card
+    dots.forEach(function(dot, index) {
+        dot.addEventListener('click', function() {
+            if (cards[index] && cards.length > 0) {
+                const cardHeight = cards[0].offsetHeight;
+                cardsContainer.scrollTo({
+                    top: cardHeight * index,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // SIMPLIFIED: Initialize
+    setTimeout(function() {
+        setupCards();
+        cardsContainer.scrollTop = 0;
+        lastSnappedPosition = 0;
+        currentIndex = 0;
+        updateCardStates();
+    }, 100);
+    
+    // Update on resize
+    window.addEventListener('resize', function() {
+        setupCards();
+        updateCardStates();
+    });
 }
 
 // Initialize project system

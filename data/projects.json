@@ -9,7 +9,7 @@
       "date": "2026",
       "description": "As part of the Sensory & Ambient Interfaces Lab at WashU, we are exploring technology-enabled test protocols to measure, categorize and qualify different haptic patterns.",
       "content": "Building on past work with active haptic feedback systems that communicate performance data during athletic training, our team is developing a web application to evaluate how haptic patterns affect brain waves.\n\nyou can structure this however makes sense for each project. some might have more text, others might be more visual.",
-      "image": "https://via.placeholder.com/200x150/000000/ffffff?text=sail_pattern_lab",
+      "image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [
         {
           "label": "view project",
@@ -31,7 +31,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -44,9 +44,9 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1070536/pexels-photo-1070536.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": true
     },
     {
       "id": "weather_aura",
@@ -57,7 +57,7 @@
       "date": null,
       "description": "Playful exploration of weather data through haptic and visual interfaces.",
       "content": "",
-      "image": "https://via.placeholder.com/200x150/000000/ffffff?text=weather_aura",
+      "image": "https://images.pexels.com/photos/2098428/pexels-photo-2098428.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": true
     },
@@ -70,9 +70,9 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": true
     },
     {
       "id": "authconnect",
@@ -83,7 +83,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -96,7 +96,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181391/pexels-photo-1181391.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -109,9 +109,9 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": true
     },
     {
       "id": "price_transparency",
@@ -122,7 +122,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -135,7 +135,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -148,7 +148,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181246/pexels-photo-1181246.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -161,7 +161,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -174,7 +174,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -187,7 +187,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     },
@@ -200,7 +200,7 @@
       "date": null,
       "description": "",
       "content": "",
-      "image": null,
+      "image": "https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
       "featured": false
     }
