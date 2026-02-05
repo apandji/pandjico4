@@ -51,6 +51,7 @@ async function loadComponent(componentName, insertMethod, options = {}) {
                 try {
                     initializeFiltering();
                     initializeSorting();
+                    initializeFilterToggle();
                     initializeLogoScrambling();
                     initializeDateDisplay();
                     initializeWeatherDisplay();
@@ -237,8 +238,8 @@ function initializeMobileMenu() {
         sidebarBackdrop.addEventListener('click', closeSidebar);
     }
     
-    // Close sidebar when clicking nav links (but not filter tags or sort buttons)
-    const navLinks = sidebar.querySelectorAll('a, button:not(.filter-tag):not(.sort-button)');
+    // Close sidebar when clicking nav links (but not filter tags, sort buttons, or works filter toggle)
+    const navLinks = sidebar.querySelectorAll('a, button:not(.filter-tag):not(.sort-button):not(.works-filter-toggle)');
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
             if (window.innerWidth <= 768) {
@@ -785,7 +786,10 @@ function initializeFiltering() {
 
     // Event listeners for sidebar filter buttons
     freshFilterTags.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             const filterValue = btn.getAttribute('data-filter');
             toggleFilter(filterValue);
         });
@@ -796,6 +800,8 @@ function initializeFiltering() {
     projectTags.forEach(tag => {
         tag.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             const tagValue = tag.getAttribute('data-tag');
             // Filter sidebar but stay on project page
             toggleFilter(tagValue);
@@ -845,6 +851,53 @@ function initializeFiltering() {
 
 // Note: initializeFiltering is called after sidebar component loads
 // No need to initialize on DOMContentLoaded since sidebar is always loaded dynamically
+
+// Filter toggle integrated into WORKS header - can be called multiple times
+function initializeFilterToggle() {
+    const worksFilterToggle = document.getElementById('worksFilterToggle');
+    const worksSection = document.querySelector('.works-section');
+    
+    if (!worksFilterToggle || !worksSection) return;
+    
+    // Skip if already initialized
+    if (worksFilterToggle.dataset.initialized === 'true') {
+        return;
+    }
+    worksFilterToggle.dataset.initialized = 'true';
+    
+    // On mobile, start collapsed by default; desktop always expanded
+    if (window.innerWidth <= 768) {
+        worksSection.classList.add('filter-collapsed');
+    } else {
+        worksSection.classList.remove('filter-collapsed');
+    }
+    
+    worksFilterToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        worksSection.classList.toggle('filter-collapsed');
+        // Icon styling is handled by CSS based on filter-collapsed class
+    });
+    
+    // Handle resize - expand on desktop, collapse on mobile
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            if (window.innerWidth <= 768) {
+                // Mobile - keep current state or collapse if not set
+                if (!worksSection.classList.contains('filter-collapsed') && 
+                    !worksSection.classList.contains('filter-expanded')) {
+                    worksSection.classList.add('filter-collapsed');
+                }
+            } else {
+                // Desktop - always expanded
+                worksSection.classList.remove('filter-collapsed');
+            }
+        }, 100);
+    });
+}
 
 // Project sorting system
 let currentSort = 'alphabetical'; // default sort

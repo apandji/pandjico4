@@ -247,6 +247,54 @@ body{
     text-decoration: none;
 }
 
+.works-filter-toggle{
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.works-filter-toggle:hover,
+.works-filter-toggle:focus{
+    outline: none;
+    opacity: 0.7;
+}
+
+.works-filter-toggle:focus-visible{
+    outline: 2px solid var(--color-black);
+    outline-offset: 2px;
+}
+
+.works-filter-icon{
+    width: 16px;
+    height: 16px;
+    transition: stroke-width 0.2s ease, fill 0.2s ease;
+    stroke-width: 1.5;
+    fill: none;
+}
+
+/* Collapsed state: outlined (thin stroke, no fill) */
+.works-section.filter-collapsed .works-filter-icon{
+    stroke-width: 1.5;
+    fill: none;
+}
+
+/* Expanded state: filled (thick stroke, filled) */
+.works-section:not(.filter-collapsed) .works-filter-icon{
+    stroke-width: 2.5;
+    fill: currentColor;
+}
+
 /* Sort buttons no longer in nav-section-title */
 
 /* Sort buttons styles moved to be with filter-controls */
@@ -275,6 +323,53 @@ body{
 
 .sort-button:last-child{
     border-right: none;
+}
+
+.filter-toggle{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 2rem;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-black);
+    color: var(--color-text);
+    cursor: pointer;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 0.15s ease;
+}
+
+.filter-toggle:hover,
+.filter-toggle:focus{
+    background-color: rgba(0, 0, 0, 0.05);
+    outline: none;
+}
+
+.filter-toggle-icon{
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+}
+
+.filter-controls.collapsed .filter-toggle-icon{
+    transform: rotate(-90deg);
+}
+
+.filter-content{
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.filter-controls.collapsed .filter-content{
+    max-height: 0;
+    opacity: 0;
 }
 
 .sort-button:hover,
@@ -331,6 +426,26 @@ body{
 
 .filter-controls{
     border-bottom: 1px solid var(--color-black);
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+/* Desktop: filters always visible */
+.works-section:not(.filter-collapsed) .filter-controls{
+    max-height: 1000px;
+}
+
+.works-section.filter-collapsed .filter-controls{
+    max-height: 0;
+    border-bottom: none;
+}
+
+.filter-toggle{
+    display: none; /* Hidden - using works-filter-toggle instead */
+}
+
+.filter-content{
+    display: block;
 }
 
 .sort-buttons{
@@ -338,7 +453,7 @@ body{
     grid-template-columns: 1fr 1fr;
     gap: 0;
     width: 100%;
-    border-bottom: 1px solid var(--color-black);
+    /* Border removed - filter-controls handles the border */
 }
 
 .filter-tags{
@@ -359,6 +474,7 @@ body{
     color: var(--color-text);
     cursor: pointer;
     transition: background-color 0.15s ease;
+    border-radius: 0; /* Sharp corners for brutalist look */
 }
 
 .filter-tag:hover{
@@ -1086,14 +1202,14 @@ body{
         width: calc(100vw - 7.5rem); /* Exact width to align with BACK button */
         max-width: calc(100vw - 7.5rem); /* Leave space for BACK button (min-width 7rem + padding) */
         height: 100vh;
+        overflow-y: auto; /* Ensure sidebar can scroll */
+        overflow-x: visible; /* Allow dates to be visible */
         z-index: 200;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         border-right: 1px solid var(--color-white);
         border-left: none; /* No left border to eliminate seam with BACK button */
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-        overflow-x: visible; /* Allow dates to be visible */
-        overflow-y: auto; /* Keep vertical scrolling */
     }
     
     .sidebar.open{
@@ -1277,27 +1393,64 @@ body{
     }
     
     /* Filter controls mobile styles */
-    .filter-controls{
+    .works-filter-toggle{
+        display: flex; /* Show toggle on mobile */
+    }
+    
+    /* Desktop: always show filters */
+    .works-section:not(.filter-collapsed) .filter-controls{
+        max-height: 1000px;
         border-bottom: 1px solid var(--color-black);
+    }
+    
+    /* Mobile: collapsed by default */
+    .works-section.filter-collapsed .filter-controls{
+        max-height: 0;
+        border-bottom: none;
+        overflow: hidden;
+    }
+    
+    .filter-content{
+        display: block;
     }
     
     .sort-buttons{
         grid-template-columns: 1fr 1fr;
         gap: 0;
         width: 100%;
-        border-bottom: 1px solid var(--color-black);
+        /* Border removed - filter-controls handles the border */
+        padding: 0;
     }
     
     .sort-button{
-        padding: 0.75rem 1rem;
-        gap: 0.375rem;
+        padding: 0.5rem 0.75rem; /* More condensed */
+        gap: 0.25rem;
+        flex-direction: row; /* Horizontal layout on mobile */
+        justify-content: center;
+    }
+    
+    .sort-icon{
+        width: 14px;
+        height: 14px;
+        margin-right: 0.25rem;
+    }
+    
+    .sort-label{
+        font-size: 0.6875rem; /* Smaller text */
     }
     
     .filter-tags{
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.375rem;
-        padding: 0.5rem 1rem 0.75rem 1rem;
+        grid-template-columns: repeat(3, 1fr); /* 3 columns */
+        gap: 0.25rem; /* Add spacing back */
+        padding: 0.375rem 1rem 0.5rem 1rem; /* Reduced padding */
+    }
+    
+    .filter-tag{
+        padding: 0.375rem 0.5rem; /* Slightly more padding */
+        font-size: 0.7rem; /* Slightly larger font */
+        min-height: 32px; /* Smaller height */
+        border-radius: 0; /* Sharp corners for brutalist look */
     }
     
     .sort-icon{

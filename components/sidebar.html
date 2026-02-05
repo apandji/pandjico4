@@ -12,19 +12,23 @@
         <div class="nav-section works-section">
             <h2 class="nav-section-title">
                 <a href="index.html" class="nav-section-link">works</a>
+                <button class="works-filter-toggle" id="worksFilterToggle" aria-label="Toggle filters">
+                    <i data-lucide="filter" class="works-filter-icon"></i>
+                </button>
             </h2>
-            <div class="filter-controls">
-                <div class="sort-buttons">
-                    <button class="sort-button" data-sort="alphabetical" data-direction="asc" aria-label="Sort alphabetically">
-                        <i data-lucide="arrow-up-a-z" class="sort-icon"></i>
-                        <span class="sort-label">A-Z</span>
-                    </button>
-                    <button class="sort-button" data-sort="year" data-direction="desc" aria-label="Sort by year">
-                        <i data-lucide="arrow-down-wide-narrow" class="sort-icon"></i>
-                        <span class="sort-label">New→Past</span>
-                    </button>
-                </div>
-                <div class="filter-tags">
+            <div class="filter-controls" id="filterControls">
+                <div class="filter-content" id="filterContent">
+                    <div class="sort-buttons">
+                        <button class="sort-button" data-sort="alphabetical" data-direction="asc" aria-label="Sort alphabetically">
+                            <i data-lucide="arrow-up-a-z" class="sort-icon"></i>
+                            <span class="sort-label">A-Z</span>
+                        </button>
+                        <button class="sort-button" data-sort="year" data-direction="desc" aria-label="Sort by year">
+                            <i data-lucide="arrow-down-wide-narrow" class="sort-icon"></i>
+                            <span class="sort-label">New→Past</span>
+                        </button>
+                    </div>
+                    <div class="filter-tags">
                 <button class="filter-tag" data-filter="all">all</button>
                 <button class="filter-tag" data-filter="ux">ux</button>
                 <button class="filter-tag" data-filter="strategy">strategy</button>
@@ -34,6 +38,7 @@
                 <button class="filter-tag" data-filter="weather">weather</button>
                 <button class="filter-tag" data-filter="play">play</button>
                 <button class="filter-tag" data-filter="haptics">haptics</button>
+                    </div>
                 </div>
             </div>
             <ul class="works-list">
