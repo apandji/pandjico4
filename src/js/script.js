@@ -1,4 +1,5 @@
 // Component loader - loads reusable HTML components
+// Safari iOS compatible version with fallback
 async function loadComponent(componentName, insertMethod, options = {}) {
     const { basePath = '' } = options;
     const componentPath = `${basePath}components/${componentName}.html`;
@@ -6,7 +7,20 @@ async function loadComponent(componentName, insertMethod, options = {}) {
     console.log(`Attempting to load component: ${componentPath}`);
     
     try {
-        const response = await fetch(componentPath);
+        // Use fetch with error handling for Safari iOS
+        let response;
+        try {
+            response = await fetch(componentPath, {
+                method: 'GET',
+                cache: 'no-cache',
+                credentials: 'same-origin'
+            });
+        } catch (fetchError) {
+            console.error('Fetch error:', fetchError);
+            // Fallback to XMLHttpRequest for older Safari
+            return loadComponentXHR(componentName, insertMethod, options);
+        }
+        
         console.log(`Fetch response for ${componentName}:`, response.status, response.statusText);
         
         if (!response.ok) {
@@ -101,8 +115,75 @@ async function loadComponent(componentName, insertMethod, options = {}) {
         console.error(`Component ${componentName} failed to load:`, error);
         console.error(`Attempted path: ${componentPath}`);
         console.error(`Current URL: ${window.location.href}`);
-        return false;
+        // Try XHR fallback
+        try {
+            return await loadComponentXHR(componentName, insertMethod, options);
+        } catch (xhrError) {
+            console.error('XHR fallback also failed:', xhrError);
+            return false;
+        }
     }
+}
+
+// XHR fallback for Safari iOS compatibility
+function loadComponentXHR(componentName, insertMethod, options) {
+    return new Promise(function(resolve, reject) {
+        const { basePath = '' } = options;
+        const componentPath = basePath + 'components/' + componentName + '.html';
+        
+        console.log('Using XHR fallback for:', componentPath);
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', componentPath, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    var html = xhr.responseText;
+                    
+                    // Insert component based on method
+                    if (insertMethod === 'beforeMain') {
+                        var main = document.querySelector('main');
+                        if (main) {
+                            main.insertAdjacentHTML('beforebegin', html);
+                        } else {
+                            reject(new Error('Main element not found'));
+                            return;
+                        }
+                    } else if (insertMethod === 'afterBegin') {
+                        var body = document.body;
+                        if (body) {
+                            body.insertAdjacentHTML('afterbegin', html);
+                        } else {
+                            reject(new Error('Body element not found'));
+                            return;
+                        }
+                    }
+                    
+                    // Fix relative paths
+                    if (componentName === 'sidebar') {
+                        fixSidebarPaths(basePath);
+                    }
+                    
+                    // Initialize Lucide icons
+                    if (typeof lucide !== 'undefined') {
+                        try {
+                            lucide.createIcons();
+                        } catch (e) {
+                            console.warn('Lucide icons initialization failed:', e);
+                        }
+                    }
+                    
+                    resolve(true);
+                } else {
+                    reject(new Error('XHR failed with status: ' + xhr.status));
+                }
+            }
+        };
+        xhr.onerror = function() {
+            reject(new Error('XHR network error'));
+        };
+        xhr.send();
+    });
 }
 
 // Fix relative paths in sidebar based on page depth
@@ -146,7 +227,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Mobile menu toggle - can be called multiple times for dynamic components
 function initializeMobileMenu() {
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    // Try primary menu first, then fallback
+    let mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    if (!mobileMenuToggle) {
+        // Try fallback menu
+        mobileMenuToggle = document.getElementById('mobileMenuToggleFallback');
+        if (mobileMenuToggle) {
+            mobileMenuToggle.style.display = 'flex';
+            mobileMenuToggle.id = 'mobileMenuToggle'; // Rename for consistency
+        }
+    }
+    
     const mobileMenuText = mobileMenuToggle ? mobileMenuToggle.querySelector('.mobile-menu-text') : null;
     const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -1391,7 +1482,28 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Auto-load components on page load
-document.addEventListener('DOMContentLoaded', async function() {
+// Safari iOS compatible - wrap in try-catch
+(function() {
+    function initComponents() {
+        // Use IIFE to avoid async/await issues in older Safari
+        (async function() {
+            try {
+                await loadComponentsMain();
+            } catch (error) {
+                console.error('Error in component loading:', error);
+                // Show fallback menu on error
+                var fallback = document.getElementById('mobileMenuToggleFallback');
+                if (fallback && window.innerWidth <= 768) {
+                    fallback.style.display = 'flex';
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+        })();
+    }
+    
+    async function loadComponentsMain() {
     // Determine base path based on current page location
     const pathname = window.location.pathname;
     const isSubdirectory = pathname.includes('/works/') || pathname.split('/').filter(Boolean).length > 1;
@@ -1442,6 +1554,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!loaded) {
             console.error('Failed to load mobile menu after all retries');
+            // Show fallback menu button
+            const fallbackMenu = document.getElementById('mobileMenuToggleFallback');
+            if (fallbackMenu) {
+                fallbackMenu.style.display = 'flex';
+                // Initialize Lucide icons for fallback
+                if (typeof lucide !== 'undefined') {
+                    setTimeout(() => {
+                        lucide.createIcons();
+                        initializeMobileMenu();
+                    }, 100);
+                }
+            }
         }
     } else if (mobileMenuExists) {
         console.log('Mobile menu already exists');
@@ -1490,7 +1614,63 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Load projects data and initialize project system
     initializeProjectSystem(basePath);
-});
+    
+    // Periodic check to ensure mobile menu exists (backup safety net)
+    if (window.innerWidth <= 768) {
+        setInterval(() => {
+            const menuExists = document.getElementById('mobileMenuToggle');
+            const sidebarExists = document.getElementById('sidebar');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile && sidebarExists && !menuExists) {
+                console.warn('Mobile menu missing, attempting recovery...');
+                const fallbackMenu = document.getElementById('mobileMenuToggleFallback');
+                if (fallbackMenu) {
+                    fallbackMenu.style.display = 'flex';
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    initializeMobileMenu();
+                } else {
+                    // Last resort: try to reload the component
+                    loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
+                        if (result) {
+                            setTimeout(() => {
+                                if (typeof lucide !== 'undefined') {
+                                    lucide.createIcons();
+                                }
+                                initializeMobileMenu();
+                            }, 100);
+                        }
+                    });
+                }
+            }
+        }, 3000); // Check every 3 seconds
+    }
+    }
+    
+    // Wait for DOM and Lucide to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initComponents);
+    } else {
+        // DOM already loaded
+        if (typeof lucide !== 'undefined') {
+            initComponents();
+        } else {
+            // Wait for Lucide
+            var lucideCheck = setInterval(function() {
+                if (typeof lucide !== 'undefined') {
+                    clearInterval(lucideCheck);
+                    initComponents();
+                }
+            }, 50);
+            setTimeout(function() {
+                clearInterval(lucideCheck);
+                initComponents(); // Try anyway
+            }, 2000);
+        }
+    }
+})();
 
 // ============================================
 // Project Data System - Single Source of Truth
@@ -1505,7 +1685,17 @@ async function loadProjectsData(basePath = '') {
     }
     
     try {
-        const response = await fetch(`${basePath}data/projects.json`);
+        let response;
+        try {
+            response = await fetch(basePath + 'data/projects.json', {
+                cache: 'no-cache',
+                credentials: 'same-origin'
+            });
+        } catch (fetchError) {
+            // Fallback to XHR for Safari iOS
+            return loadProjectsDataXHR(basePath);
+        }
+        
         if (!response.ok) {
             throw new Error('Failed to load projects data');
         }
@@ -1515,8 +1705,42 @@ async function loadProjectsData(basePath = '') {
         return data;
     } catch (error) {
         console.error('Error loading projects data:', error);
-        return null;
+        // Try XHR fallback
+        try {
+            return await loadProjectsDataXHR(basePath);
+        } catch (xhrError) {
+            console.error('XHR fallback also failed:', xhrError);
+            return null;
+        }
     }
+}
+
+// XHR fallback for projects data
+function loadProjectsDataXHR(basePath) {
+    return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', basePath + 'data/projects.json', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        projectsData = data;
+                        console.log('Projects data loaded via XHR:', data.projects.length, 'projects');
+                        resolve(data);
+                    } catch (e) {
+                        reject(new Error('Failed to parse JSON: ' + e.message));
+                    }
+                } else {
+                    reject(new Error('XHR failed with status: ' + xhr.status));
+                }
+            }
+        };
+        xhr.onerror = function() {
+            reject(new Error('XHR network error'));
+        };
+        xhr.send();
+    });
 }
 
 // Get project by slug

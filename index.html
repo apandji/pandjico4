@@ -9,7 +9,42 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="src/js/script.js?v=38" defer></script>
+    <script>
+        // Ensure Lucide is loaded before our script runs
+        (function() {
+            if (typeof lucide === 'undefined') {
+                // Wait for Lucide to load
+                var checkLucide = setInterval(function() {
+                    if (typeof lucide !== 'undefined') {
+                        clearInterval(checkLucide);
+                        loadMainScript();
+                    }
+                }, 50);
+                // Timeout after 2 seconds
+                setTimeout(function() {
+                    clearInterval(checkLucide);
+                    loadMainScript();
+                }, 2000);
+            } else {
+                loadMainScript();
+            }
+            
+            function loadMainScript() {
+                var script = document.createElement('script');
+                script.src = 'src/js/script.js?v=40';
+                script.defer = true;
+                script.onerror = function() {
+                    console.error('Failed to load main script');
+                    // Show fallback menu if script fails
+                    var fallback = document.getElementById('mobileMenuToggleFallback');
+                    if (fallback) {
+                        fallback.style.display = 'flex';
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -17,6 +52,13 @@
     
     <!-- Components load here via JavaScript -->
     <!-- Fallback: If JavaScript is disabled, include sidebar manually in noscript tag -->
+    
+    <!-- Static fallback mobile menu button (hidden by default, shown if dynamic load fails) -->
+    <button class="mobile-menu-toggle mobile-menu-fallback" id="mobileMenuToggleFallback" aria-label="Toggle menu" style="display: none;">
+        <i data-lucide="chevron-left" class="mobile-menu-icon mobile-menu-icon-left" style="display: none;"></i>
+        <span class="mobile-menu-text">MENU</span>
+        <i data-lucide="chevron-right" class="mobile-menu-icon mobile-menu-icon-right"></i>
+    </button>
 
     <main class="content">
         <header class="home-header">
