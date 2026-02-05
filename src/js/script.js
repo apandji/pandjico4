@@ -1482,28 +1482,28 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Auto-load components on page load
-// Safari iOS compatible - wrap in try-catch
-(function() {
-    function initComponents() {
-        // Use IIFE to avoid async/await issues in older Safari
-        (async function() {
-            try {
-                await loadComponentsMain();
-            } catch (error) {
-                console.error('Error in component loading:', error);
-                // Show fallback menu on error
-                var fallback = document.getElementById('mobileMenuToggleFallback');
-                if (fallback && window.innerWidth <= 768) {
-                    fallback.style.display = 'flex';
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired');
+    
+    // Initialize components
+    (async function() {
+        try {
+            await loadComponentsMain();
+        } catch (error) {
+            console.error('Error in component loading:', error);
+            // Show fallback menu on error
+            var fallback = document.getElementById('mobileMenuToggleFallback');
+            if (fallback && window.innerWidth <= 768) {
+                fallback.style.display = 'flex';
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
                 }
             }
-        })();
-    }
-    
-    async function loadComponentsMain() {
+        }
+    })();
+});
+
+async function loadComponentsMain() {
     // Determine base path based on current page location
     const pathname = window.location.pathname;
     const isSubdirectory = pathname.includes('/works/') || pathname.split('/').filter(Boolean).length > 1;
@@ -1647,30 +1647,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 3000); // Check every 3 seconds
     }
-    }
-    
-    // Wait for DOM and Lucide to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initComponents);
-    } else {
-        // DOM already loaded
-        if (typeof lucide !== 'undefined') {
-            initComponents();
-        } else {
-            // Wait for Lucide
-            var lucideCheck = setInterval(function() {
-                if (typeof lucide !== 'undefined') {
-                    clearInterval(lucideCheck);
-                    initComponents();
-                }
-            }, 50);
-            setTimeout(function() {
-                clearInterval(lucideCheck);
-                initComponents(); // Try anyway
-            }, 2000);
-        }
-    }
-})();
+}
 
 // ============================================
 // Project Data System - Single Source of Truth

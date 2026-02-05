@@ -9,42 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        // Ensure Lucide is loaded before our script runs
-        (function() {
-            if (typeof lucide === 'undefined') {
-                // Wait for Lucide to load
-                var checkLucide = setInterval(function() {
-                    if (typeof lucide !== 'undefined') {
-                        clearInterval(checkLucide);
-                        loadMainScript();
-                    }
-                }, 50);
-                // Timeout after 2 seconds
-                setTimeout(function() {
-                    clearInterval(checkLucide);
-                    loadMainScript();
-                }, 2000);
-            } else {
-                loadMainScript();
-            }
-            
-            function loadMainScript() {
-                var script = document.createElement('script');
-                script.src = 'src/js/script.js?v=40';
-                script.defer = true;
-                script.onerror = function() {
-                    console.error('Failed to load main script');
-                    // Show fallback menu if script fails
-                    var fallback = document.getElementById('mobileMenuToggleFallback');
-                    if (fallback) {
-                        fallback.style.display = 'flex';
-                    }
-                };
-                document.head.appendChild(script);
-            }
-        })();
-    </script>
+    <script src="src/js/script.js?v=43" defer></script>
 </head>
 
 <body>
