@@ -54,7 +54,21 @@ async function loadComponent(componentName, insertMethod, options = {}) {
                     initializeLogoScrambling();
                     initializeDateDisplay();
                     initializeWeatherDisplay();
-                    initializeMobileMenu();
+                    // Initialize mobile menu - check if component exists first
+                    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+                    if (mobileMenuToggle) {
+                        initializeMobileMenu();
+                    } else if (window.innerWidth <= 768) {
+                        // If on mobile and menu doesn't exist, try to load it
+                        console.log('Sidebar loaded but mobile menu missing, attempting to load...');
+                        loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
+                            if (result) {
+                                setTimeout(() => {
+                                    initializeMobileMenu();
+                                }, 100);
+                            }
+                        });
+                    }
                 } catch (error) {
                     console.error('Error initializing sidebar features:', error);
                 }
@@ -69,7 +83,16 @@ async function loadComponent(componentName, insertMethod, options = {}) {
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
-            }, 50);
+                // Also ensure mobile menu is initialized if sidebar already exists
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    try {
+                        initializeMobileMenu();
+                    } catch (error) {
+                        console.error('Error initializing mobile menu after component load:', error);
+                    }
+                }
+            }, 100);
         }
         
         return true;
@@ -1198,21 +1221,74 @@ document.addEventListener('DOMContentLoaded', async function() {
     const sidebarExists = document.getElementById('sidebar');
     const mobileMenuExists = document.getElementById('mobileMenuToggle');
     
-    if (!mobileMenuExists) {
+    if (!mobileMenuExists && window.innerWidth <= 768) {
         console.log('Loading mobile-menu component...');
-        try {
-            const result = await loadComponent('mobile-menu', 'afterBegin', { basePath });
-            if (result) {
-                console.log('Mobile menu loaded successfully');
-            } else {
-                console.error('Mobile menu failed to load');
+        // Retry logic for mobile menu loading
+        let retries = 3;
+        let loaded = false;
+        
+        while (retries > 0 && !loaded) {
+            try {
+                const result = await loadComponent('mobile-menu', 'afterBegin', { basePath });
+                if (result) {
+                    // Verify it was actually inserted
+                    const menuElement = document.getElementById('mobileMenuToggle');
+                    if (menuElement) {
+                        console.log('Mobile menu loaded successfully');
+                        loaded = true;
+                        // Ensure Lucide icons are initialized
+                        if (typeof lucide !== 'undefined') {
+                            setTimeout(() => {
+                                lucide.createIcons();
+                            }, 100);
+                        }
+                    } else {
+                        throw new Error('Mobile menu element not found after load');
+                    }
+                } else {
+                    throw new Error('loadComponent returned false');
+                }
+            } catch (err) {
+                console.error(`Error loading mobile-menu (${retries} retries left):`, err);
+                retries--;
+                if (retries > 0) {
+                    // Wait before retrying
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             }
-        } catch (err) {
-            console.error('Error loading mobile-menu:', err);
         }
-    } else {
+        
+        if (!loaded) {
+            console.error('Failed to load mobile menu after all retries');
+        }
+    } else if (mobileMenuExists) {
         console.log('Mobile menu already exists');
     }
+    
+    // Add resize listener to handle orientation changes
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile && !mobileMenuToggle) {
+                console.log('Window resized to mobile, loading mobile menu...');
+                loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
+                    if (result) {
+                        const menuElement = document.getElementById('mobileMenuToggle');
+                        if (menuElement && typeof lucide !== 'undefined') {
+                            setTimeout(() => {
+                                lucide.createIcons();
+                                initializeMobileMenu();
+                            }, 100);
+                        }
+                    }
+                });
+            }
+        }, 250);
+    });
     
     if (!sidebarExists) {
         console.log('Loading sidebar component...');
