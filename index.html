@@ -9,7 +9,62 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="src/js/script.js?v=43" defer></script>
+    <script>
+        // Immediate error detection for iOS
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript error:', e.message, e.filename, e.lineno);
+            // Show failure indicator on critical errors
+            if (e.message && e.message.indexOf('script') !== -1) {
+                if (typeof showJSFailureIndicator === 'function') {
+                    showJSFailureIndicator('Script error: ' + e.message);
+                }
+            }
+        });
+    </script>
+    <script>
+        // Test script execution immediately - iOS compatibility check
+        (function() {
+            'use strict';
+            try {
+                console.log('Inline script test - JavaScript is enabled');
+                document.documentElement.classList.add('js-enabled');
+            } catch (e) {
+                console.error('Initialization error:', e);
+            }
+        })();
+    </script>
+    <script src="src/js/script.js?v=58" defer></script>
+    <script>
+        // Verify script loaded and show failure indicator if needed
+        (function() {
+            'use strict';
+            setTimeout(function() {
+                try {
+                    if (typeof window.loadComponent === 'undefined') {
+                        console.error('Main script failed to load - functions not available');
+                        if (typeof showJSFailureIndicator === 'function') {
+                            showJSFailureIndicator('Main script failed to load');
+                        } else {
+                            // Last resort - create indicator manually
+                            var indicator = document.createElement('div');
+                            indicator.id = 'jsFailureIndicator';
+                            indicator.innerHTML = '<div style="position: fixed; top: 0; left: 0; right: 0; background-color: #ff0000; color: #ffffff; padding: 1rem; text-align: center; font-family: ui-monospace, monospace; font-size: 0.875rem; z-index: 10000; border-bottom: 2px solid #000;">⚠️ JavaScript failed to load. Please refresh the page.</div>';
+                            indicator.style.display = 'block';
+                            document.body.insertBefore(indicator, document.body.firstChild);
+                        }
+                    } else {
+                        console.log('Main script loaded successfully');
+                    }
+                } catch (e) {
+                    console.error('Verification error:', e);
+                }
+            }, 2000);
+        })();
+    </script>
+    <noscript>
+        <!-- Fallback for no JavaScript -->
+        <div style="position: fixed; top: 0; left: 0; right: 0; background-color: #ff0000; color: #ffffff; padding: 1rem; text-align: center; font-family: ui-monospace, monospace; font-size: 0.875rem; z-index: 10000; border-bottom: 2px solid #000;">⚠️ JavaScript is disabled. Please enable JavaScript to use this site.</div>
+    </noscript>
 </head>
 
 <body>
@@ -18,12 +73,8 @@
     <!-- Components load here via JavaScript -->
     <!-- Fallback: If JavaScript is disabled, include sidebar manually in noscript tag -->
     
-    <!-- Static fallback mobile menu button (hidden by default, shown if dynamic load fails) -->
-    <button class="mobile-menu-toggle mobile-menu-fallback" id="mobileMenuToggleFallback" aria-label="Toggle menu" style="display: none;">
-        <i data-lucide="chevron-left" class="mobile-menu-icon mobile-menu-icon-left" style="display: none;"></i>
-        <span class="mobile-menu-text">MENU</span>
-        <i data-lucide="chevron-right" class="mobile-menu-icon mobile-menu-icon-right"></i>
-    </button>
+    <!-- JavaScript failure indicator (created by JS if needed) -->
+    <div id="jsFailureIndicator" style="display: none;" aria-live="polite"></div>
 
     <main class="content">
         <header class="home-header">

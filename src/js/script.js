@@ -1,8 +1,85 @@
+// Immediate test to ensure script is loading - iOS Safari compatible
+(function() {
+    'use strict';
+    try {
+        console.log('Script loaded successfully');
+        
+        // Hide JS failure indicator if script loads successfully
+        function hideFailureIndicator() {
+            var indicator = document.getElementById('jsFailureIndicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+        
+        // Hide indicator immediately if script loaded
+        hideFailureIndicator();
+        
+        // Also hide after DOM is ready
+        if (document.body) {
+            hideFailureIndicator();
+        } else {
+            if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', hideFailureIndicator);
+            }
+        }
+    } catch (e) {
+        console.error('Script initialization error:', e);
+        showJSFailureIndicator('Script initialization failed');
+    }
+})();
+
+// Show JavaScript failure indicator - iOS Safari compatible
+function showJSFailureIndicator(message) {
+    'use strict';
+    try {
+        var indicator = document.getElementById('jsFailureIndicator');
+        if (!indicator) {
+            // Create indicator if it doesn't exist
+            indicator = document.createElement('div');
+            indicator.id = 'jsFailureIndicator';
+            indicator.setAttribute('aria-live', 'polite');
+            indicator.setAttribute('role', 'alert');
+            if (document.body) {
+                document.body.insertBefore(indicator, document.body.firstChild);
+            } else {
+                // Wait for body
+                if (document.addEventListener) {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.insertBefore(indicator, document.body.firstChild);
+                    });
+                }
+            }
+        }
+        
+        var errorMessage = message || 'Unknown error';
+        var errorHTML = '<div style="position: fixed; top: 0; left: 0; right: 0; background-color: #ff0000; color: #ffffff; padding: 1rem; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; z-index: 10000; border-bottom: 2px solid #000; line-height: 1.5;">⚠️ JavaScript Error: ' + errorMessage + '. Some features may not work.</div>';
+        indicator.innerHTML = errorHTML;
+        indicator.style.display = 'block';
+    } catch (e) {
+        console.error('Failed to show failure indicator:', e);
+        // Last resort - try alert
+        try {
+            alert('JavaScript Error: ' + (message || 'Unknown error'));
+        } catch (alertErr) {
+            console.error('Could not show error:', alertErr);
+        }
+    }
+}
+
 // Component loader - loads reusable HTML components
 // Safari iOS compatible version with fallback
-async function loadComponent(componentName, insertMethod, options = {}) {
-    const { basePath = '' } = options;
-    const componentPath = `${basePath}components/${componentName}.html`;
+async function loadComponent(componentName, insertMethod, options) {
+    // iOS Safari compatibility - handle default parameter and destructuring
+    if (typeof options === 'undefined' || options === null) {
+        options = {};
+    }
+    var basePath = '';
+    if (options && options.basePath) {
+        basePath = options.basePath;
+    }
+    // iOS Safari compatibility - avoid template literals in some cases
+    var componentPath = basePath + 'components/' + componentName + '.html';
     
     console.log(`Attempting to load component: ${componentPath}`);
     
@@ -21,20 +98,20 @@ async function loadComponent(componentName, insertMethod, options = {}) {
             return loadComponentXHR(componentName, insertMethod, options);
         }
         
-        console.log(`Fetch response for ${componentName}:`, response.status, response.statusText);
+        console.log('Fetch response for ' + componentName + ':', response.status, response.statusText);
         
         if (!response.ok) {
-            throw new Error(`Failed to load component: ${componentName} - ${response.status} ${response.statusText}`);
+            throw new Error('Failed to load component: ' + componentName + ' - ' + response.status + ' ' + response.statusText);
         }
-        const html = await response.text();
-        console.log(`Successfully fetched ${componentName}, HTML length:`, html.length);
+        var html = await response.text();
+        console.log('Successfully fetched ' + componentName + ', HTML length:', html.length);
         
         // Insert component based on method
         if (insertMethod === 'beforeMain') {
             const main = document.querySelector('main');
             if (main) {
                 main.insertAdjacentHTML('beforebegin', html);
-                console.log(`Inserted ${componentName} before main`);
+                console.log('Inserted ' + componentName + ' before main');
             } else {
                 throw new Error('Main element not found');
             }
@@ -112,9 +189,9 @@ async function loadComponent(componentName, insertMethod, options = {}) {
         
         return true;
     } catch (error) {
-        console.error(`Component ${componentName} failed to load:`, error);
-        console.error(`Attempted path: ${componentPath}`);
-        console.error(`Current URL: ${window.location.href}`);
+        console.error('Component ' + componentName + ' failed to load:', error);
+        console.error('Attempted path: ' + componentPath);
+        console.error('Current URL: ' + window.location.href);
         // Try XHR fallback
         try {
             return await loadComponentXHR(componentName, insertMethod, options);
@@ -128,7 +205,11 @@ async function loadComponent(componentName, insertMethod, options = {}) {
 // XHR fallback for Safari iOS compatibility
 function loadComponentXHR(componentName, insertMethod, options) {
     return new Promise(function(resolve, reject) {
-        const { basePath = '' } = options;
+        // iOS Safari compatibility - handle destructuring
+        var basePath = '';
+        if (options && options.basePath) {
+            basePath = options.basePath;
+        }
         const componentPath = basePath + 'components/' + componentName + '.html';
         
         console.log('Using XHR fallback for:', componentPath);
@@ -218,25 +299,35 @@ function fixSidebarPaths(basePath) {
     });
 }
 
-// Initialize Lucide icons
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
+// Initialize Lucide icons - multiple initialization methods for iOS compatibility
+(function() {
+    'use strict';
+    function initLucide() {
+        if (typeof lucide !== 'undefined') {
+            try {
+                lucide.createIcons();
+            } catch (e) {
+                console.error('Lucide initialization error:', e);
+            }
+        }
     }
-});
+    
+    // Try immediately
+    initLucide();
+    
+    // Also on DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLucide);
+    }
+    
+    // And after a delay
+    setTimeout(initLucide, 100);
+})();
 
 // Mobile menu toggle - can be called multiple times for dynamic components
 function initializeMobileMenu() {
-    // Try primary menu first, then fallback
-    let mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    if (!mobileMenuToggle) {
-        // Try fallback menu
-        mobileMenuToggle = document.getElementById('mobileMenuToggleFallback');
-        if (mobileMenuToggle) {
-            mobileMenuToggle.style.display = 'flex';
-            mobileMenuToggle.id = 'mobileMenuToggle'; // Rename for consistency
-        }
-    }
+    // Get mobile menu toggle
+    var mobileMenuToggle = document.getElementById('mobileMenuToggle');
     
     const mobileMenuText = mobileMenuToggle ? mobileMenuToggle.querySelector('.mobile-menu-text') : null;
     const sidebar = document.getElementById('sidebar');
@@ -708,44 +799,66 @@ function initializeLogoScrambling() {
     
     const originalText = 'PANDJICO';
     const easterEggText = 'P4NDJICO';
-
-    // Characters that look code-like for scrambling
-    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
+    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // ASCII block characters for terminal aesthetic
+    const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+    // Special characters prioritized
+    const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
 
     let scrambleInterval = null;
     let isHovering = false;
     let currentText = originalText; // Track which version is currently displayed
 
     function getRandomChar() {
+        const rand = Math.random();
+        // 50% chance for blocks
+        if (rand < 0.5) {
+            return blockChars[Math.floor(Math.random() * blockChars.length)];
+        }
+        // 30% chance for special characters
+        else if (rand < 0.8) {
+            return specialChars[Math.floor(Math.random() * specialChars.length)];
+        }
+        // 20% chance for regular alphanumeric
         return codeChars[Math.floor(Math.random() * codeChars.length)];
     }
 
-    function scrambleText() {
+    function slowGlitch() {
         if (!isHovering) return;
         
-        // Occasionally show P4NDJICO during scrambling (20% chance)
-        if (Math.random() < 0.2) {
+        // Occasionally show P4NDJICO during glitching (15% chance)
+        if (Math.random() < 0.15) {
             logoText.textContent = easterEggText;
+            currentText = easterEggText;
             return;
         }
         
         const textArray = logoText.textContent.split('');
-        const scrambled = textArray.map((char, index) => {
-            // Skip spaces, keep them as spaces
-            if (char === ' ') return ' ';
-            // Randomly scramble characters
-            return Math.random() > 0.3 ? getRandomChar() : char;
-        });
+        let changed = 0;
+        const maxChanges = 2; // Only change 1-2 characters at a time for calming effect
         
-        logoText.textContent = scrambled.join('');
+        // Gradually morph characters
+        for (let i = 0; i < textArray.length && changed < maxChanges; i++) {
+            // Skip spaces
+            if (textArray[i] === ' ') continue;
+            
+            // 25% chance to change this character (slower, more deliberate)
+            if (Math.random() < 0.25) {
+                textArray[i] = getRandomChar();
+                changed++;
+            }
+        }
+        
+        logoText.textContent = textArray.join('');
     }
 
     function startScrambling() {
         isHovering = true;
-        // Scramble immediately
-        scrambleText();
-        // Continue scrambling at intervals
-        scrambleInterval = setInterval(scrambleText, 50);
+        currentText = originalText;
+        // Start slow glitch - 200ms interval (much slower than 50ms)
+        slowGlitch();
+        // Continue glitching at intervals
+        scrambleInterval = setInterval(slowGlitch, 200);
     }
 
     function stopScrambling() {
@@ -1353,7 +1466,7 @@ function applySort(sortType, direction = 'asc', projectsArray = null) {
 }
 
 
-// Featured Work scramble effect on hover (text or arrow)
+// Featured Work slow-motion calming glitch effect on hover
 document.addEventListener('DOMContentLoaded', function() {
     const featuredWorkSection = document.querySelector('.featured-work .section-header');
     const featuredWorkLink = document.querySelector('.featured-work .section-link');
@@ -1363,33 +1476,83 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const originalText = 'FEATURED WORK';
     const targetText = 'SEE ALL WORKS';
-    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
-    
+    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // ASCII block characters for terminal aesthetic
+    const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+    // Special characters prioritized
+    const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
+    let currentText = originalText;
     let scrambleInterval = null;
     let isHovering = false;
+    let charIndex = 0;
+    let frameCount = 0;
     
     function getRandomChar() {
+        const rand = Math.random();
+        // 50% chance for blocks
+        if (rand < 0.5) {
+            return blockChars[Math.floor(Math.random() * blockChars.length)];
+        }
+        // 30% chance for special characters
+        else if (rand < 0.8) {
+            return specialChars[Math.floor(Math.random() * specialChars.length)];
+        }
+        // 20% chance for regular alphanumeric
         return codeChars[Math.floor(Math.random() * codeChars.length)];
     }
     
-    function scrambleText() {
-        const textArray = targetText.split('');
-        const scrambled = textArray.map((char, index) => {
-            if (char === ' ') return ' ';
-            return Math.random() > 0.3 ? getRandomChar() : char;
-        });
+    function slowGlitch() {
+        if (!isHovering) return;
         
-        featuredWorkSpan.textContent = scrambled.join('');
+        const targetArray = targetText.split('');
+        const currentArray = currentText.split('');
+        
+        // Only change 1-2 characters at a time for calming effect
+        let changed = 0;
+        const maxChanges = 2;
+        
+        // Gradually reveal target text, character by character
+        for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+            if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
+                // 30% chance to change this character (slower, more deliberate)
+                if (Math.random() < 0.3) {
+                    // Sometimes show target char, sometimes random char
+                    if (Math.random() < 0.6) {
+                        currentArray[i] = targetArray[i];
+                    } else {
+                        currentArray[i] = getRandomChar();
+                    }
+                    changed++;
+                }
+            }
+        }
+        
+        currentText = currentArray.join('');
+        featuredWorkSpan.textContent = currentText;
+        frameCount++;
+        
+        // After enough frames, ensure we show target text
+        if (frameCount > 15 && currentText !== targetText) {
+            featuredWorkSpan.textContent = targetText;
+            currentText = targetText;
+            if (scrambleInterval) {
+                clearInterval(scrambleInterval);
+                scrambleInterval = null;
+            }
+        }
     }
     
     function startScrambling() {
         isHovering = true;
+        currentText = originalText;
+        frameCount = 0;
+        charIndex = 0;
         
-        // Scramble for a brief period
-        scrambleText();
-        scrambleInterval = setInterval(scrambleText, 50);
+        // Start slow glitch - 200ms interval (much slower than 50ms)
+        slowGlitch();
+        scrambleInterval = setInterval(slowGlitch, 200);
         
-        // After 250ms of scrambling, stop and show target text
+        // After 600ms, ensure target text is shown (longer, more calming)
         setTimeout(() => {
             if (scrambleInterval) {
                 clearInterval(scrambleInterval);
@@ -1397,8 +1560,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (isHovering) {
                 featuredWorkSpan.textContent = targetText;
+                currentText = targetText;
             }
-        }, 250);
+        }, 600);
     }
     
     function stopScrambling() {
@@ -1408,6 +1572,8 @@ document.addEventListener('DOMContentLoaded', function() {
             scrambleInterval = null;
         }
         featuredWorkSpan.textContent = originalText;
+        currentText = originalText;
+        frameCount = 0;
     }
     
     // Add hover listeners to the entire section header
@@ -1417,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', function() {
     featuredWorkLink.addEventListener('blur', stopScrambling);
 });
 
-// About section scramble effect on hover (text or arrow)
+// About section slow-motion calming glitch effect on hover
 document.addEventListener('DOMContentLoaded', function() {
     const aboutSection = document.querySelector('.about-section .section-header');
     const aboutLink = document.querySelector('.about-section .section-link');
@@ -1427,33 +1593,83 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const originalText = 'ABOUT ME';
     const targetText = 'READ MORE';
-    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
-    
+    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // ASCII block characters for terminal aesthetic
+    const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+    // Special characters prioritized
+    const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
+    let currentText = originalText;
     let scrambleInterval = null;
     let isHovering = false;
+    let charIndex = 0;
+    let frameCount = 0;
     
     function getRandomChar() {
+        const rand = Math.random();
+        // 50% chance for blocks
+        if (rand < 0.5) {
+            return blockChars[Math.floor(Math.random() * blockChars.length)];
+        }
+        // 30% chance for special characters
+        else if (rand < 0.8) {
+            return specialChars[Math.floor(Math.random() * specialChars.length)];
+        }
+        // 20% chance for regular alphanumeric
         return codeChars[Math.floor(Math.random() * codeChars.length)];
     }
     
-    function scrambleText() {
-        const textArray = targetText.split('');
-        const scrambled = textArray.map((char, index) => {
-            if (char === ' ') return ' ';
-            return Math.random() > 0.3 ? getRandomChar() : char;
-        });
+    function slowGlitch() {
+        if (!isHovering) return;
         
-        aboutSpan.textContent = scrambled.join('');
+        const targetArray = targetText.split('');
+        const currentArray = currentText.split('');
+        
+        // Only change 1-2 characters at a time for calming effect
+        let changed = 0;
+        const maxChanges = 2;
+        
+        // Gradually reveal target text, character by character
+        for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+            if (currentArray[i] !== targetArray[i] && targetArray[i] !== undefined) {
+                // 30% chance to change this character (slower, more deliberate)
+                if (Math.random() < 0.3) {
+                    // Sometimes show target char, sometimes random char
+                    if (Math.random() < 0.6) {
+                        currentArray[i] = targetArray[i];
+                    } else {
+                        currentArray[i] = getRandomChar();
+                    }
+                    changed++;
+                }
+            }
+        }
+        
+        currentText = currentArray.join('');
+        aboutSpan.textContent = currentText;
+        frameCount++;
+        
+        // After enough frames, ensure we show target text
+        if (frameCount > 12 && currentText !== targetText) {
+            aboutSpan.textContent = targetText;
+            currentText = targetText;
+            if (scrambleInterval) {
+                clearInterval(scrambleInterval);
+                scrambleInterval = null;
+            }
+        }
     }
     
     function startScrambling() {
         isHovering = true;
+        currentText = originalText;
+        frameCount = 0;
+        charIndex = 0;
         
-        // Scramble for a brief period
-        scrambleText();
-        scrambleInterval = setInterval(scrambleText, 50);
+        // Start slow glitch - 200ms interval (much slower than 50ms)
+        slowGlitch();
+        scrambleInterval = setInterval(slowGlitch, 200);
         
-        // After 250ms of scrambling, stop and show target text
+        // After 500ms, ensure target text is shown (longer, more calming)
         setTimeout(() => {
             if (scrambleInterval) {
                 clearInterval(scrambleInterval);
@@ -1461,8 +1677,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (isHovering) {
                 aboutSpan.textContent = targetText;
+                currentText = targetText;
             }
-        }, 250);
+        }, 500);
     }
     
     function stopScrambling() {
@@ -1472,6 +1689,8 @@ document.addEventListener('DOMContentLoaded', function() {
             scrambleInterval = null;
         }
         aboutSpan.textContent = originalText;
+        currentText = originalText;
+        frameCount = 0;
     }
     
     // Add hover listeners to the entire section header
@@ -1482,26 +1701,49 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Auto-load components on page load
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded fired');
+// Safari iOS compatible - handle both DOMContentLoaded and immediate execution
+(function() {
+    'use strict';
     
-    // Initialize components
-    (async function() {
-        try {
-            await loadComponentsMain();
-        } catch (error) {
-            console.error('Error in component loading:', error);
-            // Show fallback menu on error
-            var fallback = document.getElementById('mobileMenuToggleFallback');
-            if (fallback && window.innerWidth <= 768) {
-                fallback.style.display = 'flex';
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
+    function initComponents() {
+        console.log('Initializing components...');
+        
+        // Initialize components
+        (async function() {
+            try {
+                await loadComponentsMain();
+            } catch (error) {
+                console.error('Error in component loading:', error);
+                // Show JS failure indicator
+                if (typeof showJSFailureIndicator === 'function') {
+                    showJSFailureIndicator('Component loading failed: ' + error.message);
                 }
             }
+        })();
+    }
+    
+    // Try multiple initialization methods for maximum compatibility
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded fired');
+            initComponents();
+        });
+    } else {
+        // DOM already loaded
+        console.log('DOM already ready');
+        initComponents();
+    }
+    
+    // Also try after a short delay as backup
+    setTimeout(function() {
+        var sidebar = document.getElementById('sidebar');
+        var menu = document.getElementById('mobileMenuToggle');
+        if (!sidebar && document.body) {
+            console.log('Delayed initialization - sidebar missing');
+            initComponents();
         }
-    })();
-});
+    }, 500);
+})();
 
 async function loadComponentsMain() {
     // Determine base path based on current page location
@@ -1509,7 +1751,7 @@ async function loadComponentsMain() {
     const isSubdirectory = pathname.includes('/works/') || pathname.split('/').filter(Boolean).length > 1;
     const basePath = isSubdirectory ? '../' : '';
     
-    console.log('Loading components with basePath:', basePath, 'pathname:', pathname);
+    console.log('Loading components with basePath: ' + basePath + ', pathname: ' + pathname);
     
     // Only load components if they don't already exist
     const sidebarExists = document.getElementById('sidebar');
@@ -1543,7 +1785,7 @@ async function loadComponentsMain() {
                     throw new Error('loadComponent returned false');
                 }
             } catch (err) {
-                console.error(`Error loading mobile-menu (${retries} retries left):`, err);
+                console.error('Error loading mobile-menu (' + retries + ' retries left):', err);
                 retries--;
                 if (retries > 0) {
                     // Wait before retrying
@@ -1554,17 +1796,9 @@ async function loadComponentsMain() {
         
         if (!loaded) {
             console.error('Failed to load mobile menu after all retries');
-            // Show fallback menu button
-            const fallbackMenu = document.getElementById('mobileMenuToggleFallback');
-            if (fallbackMenu) {
-                fallbackMenu.style.display = 'flex';
-                // Initialize Lucide icons for fallback
-                if (typeof lucide !== 'undefined') {
-                    setTimeout(() => {
-                        lucide.createIcons();
-                        initializeMobileMenu();
-                    }, 100);
-                }
+            // Show JS failure indicator
+            if (typeof showJSFailureIndicator === 'function') {
+                showJSFailureIndicator('Mobile menu failed to load');
             }
         }
     } else if (mobileMenuExists) {
@@ -1624,25 +1858,35 @@ async function loadComponentsMain() {
             
             if (isMobile && sidebarExists && !menuExists) {
                 console.warn('Mobile menu missing, attempting recovery...');
-                const fallbackMenu = document.getElementById('mobileMenuToggleFallback');
-                if (fallbackMenu) {
-                    fallbackMenu.style.display = 'flex';
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                    initializeMobileMenu();
-                } else {
-                    // Last resort: try to reload the component
-                    loadComponent('mobile-menu', 'afterBegin', { basePath }).then(result => {
+                // Try to reload the component
+                if (typeof loadComponent === 'function') {
+                    loadComponent('mobile-menu', 'afterBegin', { basePath: basePath }).then(function(result) {
                         if (result) {
-                            setTimeout(() => {
+                            setTimeout(function() {
                                 if (typeof lucide !== 'undefined') {
                                     lucide.createIcons();
                                 }
-                                initializeMobileMenu();
+                                if (typeof initializeMobileMenu === 'function') {
+                                    initializeMobileMenu();
+                                }
                             }, 100);
+                        } else {
+                            // Show failure indicator if recovery fails
+                            if (typeof showJSFailureIndicator === 'function') {
+                                showJSFailureIndicator('Mobile menu recovery failed');
+                            }
+                        }
+                    }).catch(function(err) {
+                        console.error('Recovery attempt failed:', err);
+                        if (typeof showJSFailureIndicator === 'function') {
+                            showJSFailureIndicator('Mobile menu recovery failed');
                         }
                     });
+                } else {
+                    // loadComponent not available - show failure indicator
+                    if (typeof showJSFailureIndicator === 'function') {
+                        showJSFailureIndicator('JavaScript functions not available');
+                    }
                 }
             }
         }, 3000); // Check every 3 seconds
@@ -1656,7 +1900,11 @@ async function loadComponentsMain() {
 let projectsData = null;
 
 // Load projects.json - single source of truth
-async function loadProjectsData(basePath = '') {
+async function loadProjectsData(basePath) {
+    // iOS Safari compatibility - handle default parameter
+    if (typeof basePath === 'undefined' || basePath === null) {
+        basePath = '';
+    }
     if (projectsData) {
         return projectsData; // Return cached data
     }
@@ -1694,6 +1942,10 @@ async function loadProjectsData(basePath = '') {
 
 // XHR fallback for projects data
 function loadProjectsDataXHR(basePath) {
+    // iOS Safari compatibility
+    if (!basePath) {
+        basePath = '';
+    }
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', basePath + 'data/projects.json', true);
@@ -1974,7 +2226,11 @@ function generateFeaturedProjects(projects) {
 }
 
 // Initialize project system
-async function initializeProjectSystem(basePath = '') {
+async function initializeProjectSystem(basePath) {
+    // iOS Safari compatibility - handle default parameter
+    if (typeof basePath === 'undefined' || basePath === null) {
+        basePath = '';
+    }
     // Load projects data
     const data = await loadProjectsData(basePath);
     if (!data) {
