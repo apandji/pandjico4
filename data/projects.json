@@ -1,0 +1,208 @@
+{
+  "projects": [
+    {
+      "id": "sail_pattern_lab",
+      "title": "SAIL Patterns App",
+      "slug": "sail_pattern_lab",
+      "category": "works",
+      "tags": ["research", "haptics", "ux"],
+      "date": "2026",
+      "description": "As part of the Sensory & Ambient Interfaces Lab at WashU, we are exploring technology-enabled test protocols to measure, categorize and qualify different haptic patterns.",
+      "content": "Building on past work with active haptic feedback systems that communicate performance data during athletic training, our team is developing a web application to evaluate how haptic patterns affect brain waves.\n\nyou can structure this however makes sense for each project. some might have more text, others might be more visual.",
+      "image": "https://via.placeholder.com/200x150/000000/ffffff?text=sail_pattern_lab",
+      "links": [
+        {
+          "label": "view project",
+          "url": "#"
+        },
+        {
+          "label": "case study",
+          "url": "#"
+        }
+      ],
+      "featured": true
+    },
+    {
+      "id": "sonic_scroller",
+      "title": "Sonic Scroller",
+      "slug": "sonic_scroller",
+      "category": "play",
+      "tags": ["play", "haptics"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "sapling",
+      "title": "Sapling",
+      "slug": "sapling",
+      "category": "play",
+      "tags": ["play", "haptics", "ux"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "weather_aura",
+      "title": "Weather Aura",
+      "slug": "weather_aura",
+      "category": "play",
+      "tags": ["play", "weather", "ux", "research"],
+      "date": null,
+      "description": "Playful exploration of weather data through haptic and visual interfaces.",
+      "content": "",
+      "image": "https://via.placeholder.com/200x150/000000/ffffff?text=weather_aura",
+      "links": [],
+      "featured": true
+    },
+    {
+      "id": "driftpad",
+      "title": "Driftpad",
+      "slug": "driftpad",
+      "category": "play",
+      "tags": ["play", "research"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "authconnect",
+      "title": "AuthConnect",
+      "slug": "authconnect",
+      "category": "works",
+      "tags": ["health", "ux"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "videochat",
+      "title": "VideoChat",
+      "slug": "videochat",
+      "category": "works",
+      "tags": ["health", "ux"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "ascension_rx",
+      "title": "Ascension RX",
+      "slug": "ascension_rx",
+      "category": "works",
+      "tags": ["health", "strategy", "brand"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "price_transparency",
+      "title": "Price Transparency",
+      "slug": "price_transparency",
+      "category": "works",
+      "tags": ["health", "research", "strategy"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "caregiver_support",
+      "title": "Caregiver Support",
+      "slug": "caregiver_support",
+      "category": "works",
+      "tags": ["health", "ux", "strategy"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "synek",
+      "title": "Synek",
+      "slug": "synek",
+      "category": "works",
+      "tags": ["brand", "strategy"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "full_circle",
+      "title": "Full Circle",
+      "slug": "full_circle",
+      "category": "works",
+      "tags": ["brand", "strategy"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "aqi_historical_record",
+      "title": "AQI Historical Record",
+      "slug": "aqi_historical_record",
+      "category": "play",
+      "tags": ["weather", "play"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "walkie_talkie",
+      "title": "Walkie Talkie",
+      "slug": "walkie_talkie",
+      "category": "play",
+      "tags": ["play", "ux"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    },
+    {
+      "id": "animated_logos",
+      "title": "Animated Logos",
+      "slug": "animated_logos",
+      "category": "play",
+      "tags": ["play", "brand"],
+      "date": null,
+      "description": "",
+      "content": "",
+      "image": null,
+      "links": [],
+      "featured": false
+    }
+  ]
+}

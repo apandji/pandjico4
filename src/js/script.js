@@ -48,11 +48,16 @@ async function loadComponent(componentName, insertMethod, options = {}) {
         if (componentName === 'sidebar') {
             // Small delay to ensure DOM is ready
             setTimeout(() => {
-                initializeFiltering();
-                initializeLogoScrambling();
-                initializeDateDisplay();
-                initializeWeatherDisplay();
-                initializeMobileMenu();
+                try {
+                    initializeFiltering();
+                    initializeSorting();
+                    initializeLogoScrambling();
+                    initializeDateDisplay();
+                    initializeWeatherDisplay();
+                    initializeMobileMenu();
+                } catch (error) {
+                    console.error('Error initializing sidebar features:', error);
+                }
             }, 100);
         }
         
@@ -209,8 +214,8 @@ function initializeMobileMenu() {
         sidebarBackdrop.addEventListener('click', closeSidebar);
     }
     
-    // Close sidebar when clicking nav links (but not filter tags)
-    const navLinks = sidebar.querySelectorAll('a, button:not(.filter-tag)');
+    // Close sidebar when clicking nav links (but not filter tags or sort buttons)
+    const navLinks = sidebar.querySelectorAll('a, button:not(.filter-tag):not(.sort-button)');
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
             if (window.innerWidth <= 768) {
@@ -688,6 +693,11 @@ function initializeFiltering() {
                 worksList.classList.remove('fallback-mode');
             }
         }
+        
+        // Re-apply sort after filtering (projectsData will be available globally)
+        if (typeof applySort === 'function') {
+            applySort(currentSort, currentDirection);
+        }
     }
 
     function toggleFilter(filterValue) {
@@ -791,6 +801,18 @@ function initializeFiltering() {
             // Check if this link's filename matches the current page filename
             if (hrefFilename === currentFilename || currentPath.includes(hrefFilename)) {
                 link.classList.add('active');
+                // Also add class to wrapper for easier CSS targeting
+                const wrapper = link.closest('.project-link-wrapper');
+                if (wrapper) {
+                    wrapper.classList.add('has-active-link');
+                }
+            } else {
+                // Remove active class if not active
+                link.classList.remove('active');
+                const wrapper = link.closest('.project-link-wrapper');
+                if (wrapper) {
+                    wrapper.classList.remove('has-active-link');
+                }
             }
         });
     }
@@ -801,92 +823,239 @@ function initializeFiltering() {
 // Note: initializeFiltering is called after sidebar component loads
 // No need to initialize on DOMContentLoaded since sidebar is always loaded dynamically
 
-// Random project lucky button
-document.addEventListener('DOMContentLoaded', function() {
-    const luckyButton = document.querySelector('.lucky-button');
-    if (!luckyButton) return;
+// Project sorting system
+let currentSort = 'alphabetical'; // default sort
+let currentDirection = 'asc'; // default direction (asc or desc)
+// Note: projectsData is declared in the Project Data System section below
+
+function initializeSorting() {
+    const sortButtons = document.querySelectorAll('.sort-button');
+    if (sortButtons.length === 0) return;
     
-    const tooltip = luckyButton.querySelector('.lucky-tooltip');
-    
-    // Position tooltip dynamically to avoid sidebar clipping
-    function updateTooltipPosition() {
-        if (!tooltip) return;
-        const rect = luckyButton.getBoundingClientRect();
-        const tooltipWidth = tooltip.offsetWidth || 120; // Estimate if not rendered
-        const isMobile = window.innerWidth <= 768;
-        
-        tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
-        
-        if (isMobile) {
-            // On mobile, align to right edge of sidebar to avoid overflow
-            const sidebar = document.querySelector('.sidebar');
-            const sidebarRect = sidebar ? sidebar.getBoundingClientRect() : null;
-            if (sidebarRect) {
-                // Position relative to sidebar right edge, with some padding
-                // Convert 0.5rem to pixels (assuming 16px base font size = 8px)
-                const paddingPx = 8;
-                tooltip.style.left = (sidebarRect.right - tooltipWidth - paddingPx) + 'px';
-                tooltip.style.transform = 'none'; // Remove centering transform
-            } else {
-                // Fallback: center on button
-                tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-                tooltip.style.transform = 'translateX(-50%)';
-            }
-        } else {
-            // Desktop: center on button
-            tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-            tooltip.style.transform = 'translateX(-50%)';
-        }
+    // Initialize Lucide icons for sort buttons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
     }
     
-    luckyButton.addEventListener('mouseenter', () => {
-        updateTooltipPosition();
-    });
-    
-    luckyButton.addEventListener('focus', () => {
-        updateTooltipPosition();
-    });
-    
-    const projectLinks = document.querySelectorAll('.works-list li a[href]');
-    
-    // Filter to only projects with actual links (not #)
-    const validProjects = Array.from(projectLinks).filter(link => {
-        const href = link.getAttribute('href');
-        return href && href !== '#' && href !== '/';
-    });
-    
-    if (validProjects.length === 0) return;
-    
-    function getRandomProject() {
-        const randomIndex = Math.floor(Math.random() * validProjects.length);
-        return validProjects[randomIndex];
-    }
-    
-    function navigateToRandom() {
-        const randomProject = getRandomProject();
-        const href = randomProject.getAttribute('href');
+    // Set up event listeners for sort buttons
+    sortButtons.forEach(button => {
+        // Remove any existing listeners by cloning the button
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
         
-        if (href) {
-            window.location.href = href;
-        }
-    }
-    
-    // Click/touch handler
-    luckyButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        navigateToRandom();
-    });
-    
-    // Keyboard handler (Enter and Space)
-    luckyButton.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        newButton.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            navigateToRandom();
+            e.stopImmediatePropagation(); // Prevent sidebar from closing on mobile
+            
+            const sortType = newButton.getAttribute('data-sort');
+            
+            // Toggle direction if clicking the same sort button
+            if (currentSort === sortType) {
+                const currentDir = newButton.getAttribute('data-direction');
+                const newDirection = currentDir === 'asc' ? 'desc' : 'asc';
+                newButton.setAttribute('data-direction', newDirection);
+                currentDirection = newDirection;
+                updateSortButtonIcon(newButton, sortType, currentDirection);
+            } else {
+                // Switch to different sort type, use its current direction
+                currentSort = sortType;
+                currentDirection = newButton.getAttribute('data-direction');
+                // Update all buttons to reflect current state
+                updateAllSortButtonIcons();
+            }
+            
+            applySort(sortType, currentDirection);
+            updateSortButtons(sortType);
+            
+            return false; // Additional prevention
+        });
+        
+        // Keyboard handler
+        newButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation(); // Prevent sidebar from closing on mobile
+                
+                const sortType = newButton.getAttribute('data-sort');
+                
+                // Toggle direction if clicking the same sort button
+                if (currentSort === sortType) {
+                    const currentDir = newButton.getAttribute('data-direction');
+                    const newDirection = currentDir === 'asc' ? 'desc' : 'asc';
+                    newButton.setAttribute('data-direction', newDirection);
+                    currentDirection = newDirection;
+                    updateSortButtonIcon(newButton, sortType, currentDirection);
+                } else {
+                    // Switch to different sort type
+                    currentSort = sortType;
+                    currentDirection = newButton.getAttribute('data-direction');
+                    // Update all buttons to reflect current state
+                    updateAllSortButtonIcons();
+                }
+                
+                applySort(sortType, currentDirection);
+                updateSortButtons(sortType);
+                
+                return false; // Additional prevention
+            }
+        });
+    });
+    
+    // Set initial button states
+    updateAllSortButtonIcons();
+    
+    // Apply initial sort if projects list exists
+    const worksList = document.querySelector('.works-list');
+    if (worksList && worksList.children.length > 0) {
+        // Load projects data if not already loaded
+        loadProjectsData().then(data => {
+            if (data && data.projects) {
+                // projectsData is a global variable from Project Data System
+                const worksProjects = data.projects.filter(p => p.category === 'works');
+                applySort(currentSort, currentDirection, worksProjects);
+                updateSortButtons(currentSort);
+            }
+        }).catch(err => {
+            console.warn('Failed to load projects data for sorting:', err);
+        });
+    }
+}
+
+function updateSortButtonIcon(button, sortType, direction) {
+    const icon = button.querySelector('.sort-icon');
+    const label = button.querySelector('.sort-label');
+    
+    if (!icon) return;
+    
+    // Remove old icon
+    icon.remove();
+    
+    // Create new icon based on sort type and direction
+    const newIcon = document.createElement('i');
+    newIcon.className = 'sort-icon';
+    
+    if (sortType === 'alphabetical') {
+        if (direction === 'asc') {
+            newIcon.setAttribute('data-lucide', 'arrow-up-a-z');
+            if (label) label.textContent = 'A-Z';
+        } else {
+            newIcon.setAttribute('data-lucide', 'arrow-down-z-a');
+            if (label) label.textContent = 'Z-A';
+        }
+    } else if (sortType === 'year') {
+        if (direction === 'desc') {
+            newIcon.setAttribute('data-lucide', 'arrow-down-wide-narrow');
+            if (label) label.textContent = 'New→Past';
+        } else {
+            newIcon.setAttribute('data-lucide', 'arrow-down-narrow-wide');
+            if (label) label.textContent = 'Past→New';
+        }
+    }
+    
+    button.insertBefore(newIcon, label);
+    
+    // Re-initialize Lucide icon
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function updateAllSortButtonIcons() {
+    const sortButtons = document.querySelectorAll('.sort-button');
+    sortButtons.forEach(button => {
+        const sortType = button.getAttribute('data-sort');
+        const direction = button.getAttribute('data-direction');
+        updateSortButtonIcon(button, sortType, direction);
+    });
+}
+
+function updateSortButtons(activeSort) {
+    const sortButtons = document.querySelectorAll('.sort-button');
+    sortButtons.forEach(button => {
+        const sortType = button.getAttribute('data-sort');
+        if (sortType === activeSort) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
         }
     });
-});
+}
+
+function applySort(sortType, direction = 'asc', projectsArray = null) {
+    const worksList = document.querySelector('.works-list');
+    if (!worksList) return;
+    
+    // Get all visible list items (respecting filters)
+    const items = Array.from(worksList.querySelectorAll('li'));
+    const visibleItems = items.filter(item => {
+        const computedStyle = window.getComputedStyle(item);
+        return computedStyle.display !== 'none';
+    });
+    
+    if (visibleItems.length === 0) return;
+    
+    // Use provided projects array or try to get from global projectsData
+    let projectsToUse = projectsArray;
+    if (!projectsToUse) {
+        // Check if projectsData is loaded (it's an object with .projects array)
+        if (typeof projectsData !== 'undefined' && projectsData && projectsData.projects) {
+            projectsToUse = projectsData.projects.filter(p => p.category === 'works');
+        }
+    }
+    
+    // Create array with item and its sort value
+    const itemsWithSortValue = visibleItems.map(item => {
+        const link = item.querySelector('a');
+        const href = link ? link.getAttribute('href') : '';
+        const slug = href ? href.replace('works/', '').replace('.html', '') : '';
+        const project = projectsToUse ? projectsToUse.find(p => p.slug === slug) : null;
+        
+        let sortValue = '';
+        if (sortType === 'alphabetical') {
+            sortValue = slug.toLowerCase();
+        } else if (sortType === 'year') {
+            if (project && project.date) {
+                sortValue = project.date;
+            } else {
+                // Try to get date from the sidebar date element
+                const dateSpan = item.querySelector('.project-date-sidebar');
+                sortValue = dateSpan ? dateSpan.textContent.trim() : '9999';
+            }
+        }
+        
+        return { item, sortValue, project };
+    });
+    
+    // Sort based on type and direction
+    if (sortType === 'alphabetical') {
+        if (direction === 'asc') {
+            itemsWithSortValue.sort((a, b) => a.sortValue.localeCompare(b.sortValue));
+        } else {
+            itemsWithSortValue.sort((a, b) => b.sortValue.localeCompare(a.sortValue));
+        }
+    } else if (sortType === 'year') {
+        itemsWithSortValue.sort((a, b) => {
+            const yearA = parseInt(a.sortValue) || 0;
+            const yearB = parseInt(b.sortValue) || 0;
+            if (direction === 'desc') {
+                return yearB - yearA; // Newest first
+            } else {
+                return yearA - yearB; // Oldest first
+            }
+        });
+    }
+    
+    // Re-append items in sorted order
+    itemsWithSortValue.forEach(({ item }) => {
+        worksList.appendChild(item);
+    });
+    
+    // Note: Active project highlighting is handled by initializeFiltering
+    // which calls setActiveProject after filtering
+}
+
 
 // Featured Work scramble effect on hover (text or arrow)
 document.addEventListener('DOMContentLoaded', function() {
@@ -1060,5 +1229,326 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
         console.log('Sidebar already exists');
     }
+    
+    // Load projects data and initialize project system
+    initializeProjectSystem(basePath);
 });
+
+// ============================================
+// Project Data System - Single Source of Truth
+// ============================================
+
+let projectsData = null;
+
+// Load projects.json - single source of truth
+async function loadProjectsData(basePath = '') {
+    if (projectsData) {
+        return projectsData; // Return cached data
+    }
+    
+    try {
+        const response = await fetch(`${basePath}data/projects.json`);
+        if (!response.ok) {
+            throw new Error('Failed to load projects data');
+        }
+        const data = await response.json();
+        projectsData = data;
+        console.log('Projects data loaded:', data.projects.length, 'projects');
+        return data;
+    } catch (error) {
+        console.error('Error loading projects data:', error);
+        return null;
+    }
+}
+
+// Get project by slug
+function getProjectBySlug(slug) {
+    if (!projectsData) return null;
+    return projectsData.projects.find(p => p.slug === slug);
+}
+
+// Get featured projects
+function getFeaturedProjects() {
+    if (!projectsData) return [];
+    return projectsData.projects.filter(p => p.featured);
+}
+
+// Get projects by tags
+function getProjectsByTags(tags) {
+    if (!projectsData) return [];
+    if (!tags || tags.length === 0) return projectsData.projects;
+    
+    return projectsData.projects.filter(project => {
+        return tags.every(tag => project.tags.includes(tag));
+    });
+}
+
+// Generate sidebar project list from projects.json
+function generateSidebarProjectList(projects) {
+    const worksList = document.querySelector('.works-list');
+    if (!worksList) return;
+    
+    // Clear existing items
+    worksList.innerHTML = '';
+    
+    // Filter to only "works" category projects
+    const worksProjects = projects.filter(p => p.category === 'works');
+    
+    // Store projects data for sorting
+    projectsData = worksProjects;
+    
+    // Generate list items
+    worksProjects.forEach(project => {
+        const li = document.createElement('li');
+        li.setAttribute('data-tags', project.tags.join(' '));
+        
+        const linkWrapper = document.createElement('div');
+        linkWrapper.className = 'project-link-wrapper';
+        
+        const a = document.createElement('a');
+        a.href = `works/${project.slug}.html`;
+        a.textContent = project.slug;
+        
+        // Check if this is the active page
+        const currentPath = window.location.pathname;
+        const projectPath = `works/${project.slug}.html`;
+        if (currentPath.includes(projectPath) || currentPath.endsWith(`/${project.slug}.html`)) {
+            a.classList.add('active');
+            linkWrapper.classList.add('has-active-link'); // Add class for easier CSS targeting
+        }
+        
+        linkWrapper.appendChild(a);
+        
+        // Add date if it exists
+        if (project.date) {
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'project-date-sidebar';
+            dateSpan.textContent = project.date;
+            linkWrapper.appendChild(dateSpan);
+            console.log('Added date for', project.slug, ':', project.date);
+        }
+        
+        li.appendChild(linkWrapper);
+        worksList.appendChild(li);
+    });
+    
+    // Apply current sort after generating list
+    setTimeout(() => {
+        if (typeof applySort === 'function') {
+            applySort(currentSort, currentDirection, worksProjects);
+            updateSortButtons(currentSort);
+        }
+    }, 50);
+    
+    console.log('Sidebar project list generated:', worksProjects.length, 'projects');
+}
+
+// Render project page from data
+function renderProjectPage(project) {
+    if (!project) {
+        console.error('No project data provided');
+        return;
+    }
+    
+    // Check if content is already pre-rendered (from build script)
+    const contentElement = document.querySelector('[data-project-content]');
+    const hasPreRenderedContent = contentElement && contentElement.innerHTML.trim() && 
+                                   !contentElement.innerHTML.includes('will be populated') &&
+                                   !contentElement.innerHTML.includes('will be inserted');
+    
+    if (hasPreRenderedContent) {
+        console.log('Project page already has pre-rendered content, skipping JS rendering');
+        // Still update tags and other metadata that might be missing
+        updateProjectMetadata(project);
+        return;
+    }
+    
+    // Update title
+    const titleElement = document.querySelector('[data-project-title]');
+    if (titleElement) {
+        if (titleElement.tagName === 'TITLE') {
+            titleElement.textContent = `${project.title} — pandjico`;
+        } else {
+            titleElement.textContent = project.title;
+        }
+    }
+    
+    // Render tags
+    const tagsContainer = document.querySelector('[data-project-tags]');
+    if (tagsContainer && (!tagsContainer.innerHTML || tagsContainer.innerHTML.includes('will be'))) {
+        tagsContainer.innerHTML = '';
+        project.tags.forEach(tag => {
+            const button = document.createElement('button');
+            button.className = 'tag';
+            button.setAttribute('data-tag', tag);
+            button.textContent = `#${tag}`;
+            tagsContainer.appendChild(button);
+        });
+    }
+    
+    // Render date
+    const dateElement = document.querySelector('[data-project-date]');
+    if (dateElement && project.date) {
+        dateElement.textContent = project.date;
+        dateElement.style.display = '';
+    } else if (dateElement) {
+        dateElement.style.display = 'none';
+    }
+    
+    // Render description
+    const descriptionElement = document.querySelector('[data-project-description]');
+    if (descriptionElement) {
+        if (project.description) {
+            descriptionElement.innerHTML = `<p>${project.description}</p>`;
+            descriptionElement.style.display = '';
+        } else {
+            descriptionElement.style.display = 'none';
+        }
+    }
+    
+    // Render content (only if not pre-rendered)
+    if (contentElement && !hasPreRenderedContent) {
+        if (project.content) {
+            // Convert newlines to paragraphs
+            const paragraphs = project.content.split('\n\n').filter(p => p.trim());
+            contentElement.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+            contentElement.style.display = '';
+        } else {
+            contentElement.style.display = 'none';
+        }
+    }
+    
+    // Render links
+    const linksElement = document.querySelector('[data-project-links]');
+    if (linksElement) {
+        if (project.links && project.links.length > 0) {
+            linksElement.innerHTML = project.links.map(link => 
+                `<a href="${link.url}" class="project-link">${link.label}</a>`
+            ).join('');
+            linksElement.style.display = '';
+        } else {
+            linksElement.style.display = 'none';
+        }
+    }
+    
+    console.log('Project page rendered:', project.slug);
+}
+
+// Update only metadata (tags, date) without overwriting content
+function updateProjectMetadata(project) {
+    const tagsContainer = document.querySelector('[data-project-tags]');
+    if (tagsContainer && (!tagsContainer.innerHTML || tagsContainer.innerHTML.includes('will be'))) {
+        tagsContainer.innerHTML = '';
+        project.tags.forEach(tag => {
+            const button = document.createElement('button');
+            button.className = 'tag';
+            button.setAttribute('data-tag', tag);
+            button.textContent = `#${tag}`;
+            tagsContainer.appendChild(button);
+        });
+    }
+    
+    const dateElement = document.querySelector('[data-project-date]');
+    if (dateElement && project.date) {
+        dateElement.textContent = project.date;
+    }
+}
+
+// Generate featured projects on homepage
+function generateFeaturedProjects(projects) {
+    const container = document.getElementById('featuredProjects');
+    if (!container) return;
+    
+    const featured = getFeaturedProjects();
+    if (featured.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    featured.forEach(project => {
+        const article = document.createElement('article');
+        article.className = 'featured-project';
+        
+        const link = document.createElement('a');
+        link.href = `works/${project.slug}.html`;
+        link.className = 'featured-project-link';
+        
+        if (project.image) {
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'featured-project-image';
+            const img = document.createElement('img');
+            img.src = project.image;
+            img.alt = project.slug;
+            imageDiv.appendChild(img);
+            link.appendChild(imageDiv);
+        }
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'featured-project-content';
+        
+        const h3 = document.createElement('h3');
+        h3.textContent = project.slug;
+        contentDiv.appendChild(h3);
+        
+        if (project.description) {
+            const p = document.createElement('p');
+            p.className = 'featured-project-description';
+            p.textContent = project.description;
+            contentDiv.appendChild(p);
+        }
+        
+        if (project.tags && project.tags.length > 0) {
+            const tagsSpan = document.createElement('span');
+            tagsSpan.className = 'featured-project-tags';
+            tagsSpan.textContent = project.tags.join(', ');
+            contentDiv.appendChild(tagsSpan);
+        }
+        
+        link.appendChild(contentDiv);
+        article.appendChild(link);
+        container.appendChild(article);
+    });
+    
+    console.log('Featured projects generated:', featured.length);
+}
+
+// Initialize project system
+async function initializeProjectSystem(basePath = '') {
+    // Load projects data
+    const data = await loadProjectsData(basePath);
+    if (!data) {
+        console.warn('Projects data not available, using fallback');
+        return;
+    }
+    
+    // Check if we're on a project page
+    const isProjectPage = window.location.pathname.includes('/works/');
+    
+    if (isProjectPage) {
+        // Extract project slug from URL
+        const pathParts = window.location.pathname.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const slug = filename.replace('.html', '');
+        
+        // Load and render project
+        const project = getProjectBySlug(slug);
+        if (project) {
+            renderProjectPage(project);
+        } else {
+            console.warn('Project not found:', slug);
+        }
+    } else {
+        // On index page - generate sidebar list and featured projects
+        // Wait for sidebar to load first
+        setTimeout(() => {
+            generateSidebarProjectList(data.projects);
+            generateFeaturedProjects(data.projects);
+            // Re-initialize filtering and sorting after generating list
+            initializeFiltering();
+            initializeSorting();
+        }, 200);
+    }
+}
 

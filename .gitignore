@@ -1,0 +1,17 @@
+# Generated HTML files (built from markdown)
+works/*.html
+!works/project-template.html
+
+# Node modules (if you add any later)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

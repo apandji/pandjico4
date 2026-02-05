@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="script.js" defer></script>
+    <script src="src/js/script.js?v=27" defer></script>
 </head>
 
 <body>
@@ -31,32 +31,8 @@
                     <i data-lucide="chevron-right" class="section-icon"></i>
                 </a>
             </h2>
-            <div class="featured-projects">
-                <article class="featured-project">
-                    <a href="works/sail_pattern_lab.html" class="featured-project-link">
-                        <div class="featured-project-image">
-                            <img src="https://via.placeholder.com/200x150/000000/ffffff?text=sail_pattern_lab" alt="sail_pattern_lab" />
-                        </div>
-                        <div class="featured-project-content">
-                            <h3>sail_pattern_lab</h3>
-                            <p class="featured-project-description">Research and exploration of haptic patterns for tactile interfaces.</p>
-                            <span class="featured-project-tags">research, haptics, ux</span>
-                        </div>
-                    </a>
-                </article>
-                
-                <article class="featured-project">
-                    <a href="#" class="featured-project-link">
-                        <div class="featured-project-image">
-                            <img src="https://via.placeholder.com/200x150/000000/ffffff?text=weather_aura" alt="weather_aura" />
-                        </div>
-                        <div class="featured-project-content">
-                            <h3>weather_aura</h3>
-                            <p class="featured-project-description">Playful exploration of weather data through haptic and visual interfaces.</p>
-                            <span class="featured-project-tags">play, weather, ux, research</span>
-                        </div>
-                    </a>
-                </article>
+            <div class="featured-projects" id="featuredProjects">
+                <!-- Featured projects will be generated from projects.json -->
             </div>
         </section>
 
