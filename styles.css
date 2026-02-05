@@ -1297,11 +1297,11 @@ body{
     
     /* Mobile sidebar list items */
     .sidebar li a{
-        padding: 0.75rem 1rem; /* Reduced padding on mobile */
+        padding: 0.75rem 1.5rem; /* Indent project items on mobile */
     }
     
     .project-link-wrapper{
-        padding: 0.75rem 1rem; /* Reduced padding on mobile */
+        padding: 0.75rem 1.5rem; /* Indent project items on mobile */
         display: flex; /* Ensure flexbox works on mobile */
         align-items: center;
         justify-content: space-between;
@@ -1346,6 +1346,7 @@ body{
     .sidebar li:has(a.active) .project-link-wrapper,
     .sidebar li .project-link-wrapper:has(a.active){
         background-color: var(--color-black) !important;
+        padding-left: calc(1.5rem - 3px); /* Account for 3px border with mobile indentation */
     }
     
     .sidebar li:has(a.active) .project-link-wrapper a,
@@ -1458,6 +1459,29 @@ body{
     /* Filter controls mobile styles */
     .works-filter-toggle{
         display: flex; /* Show toggle on mobile */
+    }
+    
+    /* Ensure filter badge is visible on mobile */
+    .filter-badge.show{
+        display: flex !important;
+    }
+    
+    /* Mobile: Remove indentation from section titles */
+    .nav-section-title{
+        padding-left: 1rem; /* Minimal left padding on mobile */
+        padding-right: 1rem;
+    }
+    
+    /* Mobile: Add indentation to items inside sections */
+    .works-list li,
+    .works-list .project-link-wrapper{
+        padding-left: 1.5rem; /* Indent project items */
+    }
+    
+    /* Adjust active project border for mobile indentation */
+    .sidebar li:has(a.active) .project-link-wrapper,
+    .sidebar li .project-link-wrapper:has(a.active){
+        padding-left: calc(1.5rem - 3px); /* Account for 3px border */
     }
     
     /* Desktop: always show filters */
