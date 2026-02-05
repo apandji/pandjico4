@@ -216,6 +216,10 @@ function initializeMobileMenu() {
         }
         // Change to CLOSE instantly
         setMenuText(closeText);
+        // Trigger haptic feedback if available
+        if (window.triggerHapticFeedback) {
+            window.triggerHapticFeedback('light');
+        }
     }
     
     function closeSidebar() {
@@ -226,12 +230,67 @@ function initializeMobileMenu() {
         }
         // Change back to MENU instantly
         setMenuText(originalText);
+        // Trigger haptic feedback if available
+        if (window.triggerHapticFeedback) {
+            window.triggerHapticFeedback('light');
+        }
     }
+    
+    // Haptic feedback function - available globally
+    window.triggerHapticFeedback = function(intensity = 'light') {
+        // Check if Vibration API is available
+        if ('vibrate' in navigator) {
+            const patterns = {
+                light: 5,
+                medium: 10,
+                heavy: 20
+            };
+            navigator.vibrate(patterns[intensity] || 5);
+        }
+    };
     
     mobileMenuToggle.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleSidebar();
     });
+    
+    // Swipe gesture handling for sidebar
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 50;
+    
+    // Track touch start
+    document.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    
+    // Handle swipe end
+    document.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+        
+        // Only process horizontal swipes (more horizontal than vertical)
+        if (absDeltaX > absDeltaY && absDeltaX > minSwipeDistance) {
+            const isSidebarOpen = sidebar.classList.contains('open');
+            
+            // Swipe right to open (from left edge)
+            if (deltaX > 0 && !isSidebarOpen && touchStartX < 50) {
+                openSidebar();
+            }
+            // Swipe left to close (when sidebar is open)
+            else if (deltaX < 0 && isSidebarOpen) {
+                closeSidebar();
+            }
+        }
+    }, { passive: true });
     
     // Close sidebar when clicking backdrop
     if (sidebarBackdrop) {
@@ -758,6 +817,24 @@ function initializeFiltering() {
                 }
             }
         });
+        
+        // Update filter badge
+        updateFilterBadge();
+    }
+    
+    function updateFilterBadge() {
+        const filterBadge = document.getElementById('filterBadge');
+        if (!filterBadge) return;
+        
+        // Count active filters (including "all" as 1)
+        const filterCount = activeFilters.length === 0 ? 1 : activeFilters.length;
+        
+        if (filterCount > 0) {
+            filterBadge.textContent = filterCount.toString();
+            filterBadge.classList.add('show');
+        } else {
+            filterBadge.classList.remove('show');
+        }
     }
     
     function updateProjectTags() {
@@ -783,6 +860,9 @@ function initializeFiltering() {
             freshFilterTags[0].classList.add('active'); // "all" is active by default
         }
     }
+    
+    // Initial badge update
+    updateFilterBadge();
 
     // Event listeners for sidebar filter buttons
     freshFilterTags.forEach(btn => {
@@ -791,7 +871,17 @@ function initializeFiltering() {
             e.stopPropagation();
             e.stopImmediatePropagation();
             const filterValue = btn.getAttribute('data-filter');
+            
+            // Add subtle scale animation
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btn.style.transform = '';
+            }, 150);
+            
             toggleFilter(filterValue);
+            
+            // Trigger haptic feedback
+            triggerHapticFeedback('light');
         });
     });
     
@@ -817,6 +907,7 @@ function initializeFiltering() {
         const currentPath = window.location.pathname;
         const currentFilename = currentPath.split('/').pop(); // Get just the filename
         const sidebarLinks = document.querySelectorAll('.works-list li a');
+        let activeLink = null;
         
         sidebarLinks.forEach(link => {
             link.classList.remove('active');
@@ -830,6 +921,7 @@ function initializeFiltering() {
             // Check if this link's filename matches the current page filename
             if (hrefFilename === currentFilename || currentPath.includes(hrefFilename)) {
                 link.classList.add('active');
+                activeLink = link;
                 // Also add class to wrapper for easier CSS targeting
                 const wrapper = link.closest('.project-link-wrapper');
                 if (wrapper) {
@@ -844,6 +936,20 @@ function initializeFiltering() {
                 }
             }
         });
+        
+        // Auto-scroll active project into view
+        if (activeLink) {
+            setTimeout(() => {
+                const listItem = activeLink.closest('li');
+                if (listItem) {
+                    listItem.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }, 100);
+        }
     }
     
     setActiveProject();
@@ -865,11 +971,24 @@ function initializeFilterToggle() {
     }
     worksFilterToggle.dataset.initialized = 'true';
     
-    // On mobile, start collapsed by default; desktop always expanded
-    if (window.innerWidth <= 768) {
-        worksSection.classList.add('filter-collapsed');
+    // Check localStorage for saved filter state
+    const savedFilterState = localStorage.getItem('worksFilterCollapsed');
+    const isMobile = window.innerWidth <= 768;
+    
+    if (savedFilterState !== null) {
+        // Use saved state
+        if (savedFilterState === 'true') {
+            worksSection.classList.add('filter-collapsed');
+        } else {
+            worksSection.classList.remove('filter-collapsed');
+        }
     } else {
-        worksSection.classList.remove('filter-collapsed');
+        // Default: collapsed on mobile, expanded on desktop
+        if (isMobile) {
+            worksSection.classList.add('filter-collapsed');
+        } else {
+            worksSection.classList.remove('filter-collapsed');
+        }
     }
     
     worksFilterToggle.addEventListener('click', (e) => {
@@ -877,6 +996,16 @@ function initializeFilterToggle() {
         e.stopPropagation();
         e.stopImmediatePropagation();
         worksSection.classList.toggle('filter-collapsed');
+        
+        // Save state to localStorage
+        const isCollapsed = worksSection.classList.contains('filter-collapsed');
+        localStorage.setItem('worksFilterCollapsed', isCollapsed.toString());
+        
+        // Trigger haptic feedback
+        if (window.triggerHapticFeedback) {
+            window.triggerHapticFeedback('light');
+        }
+        
         // Icon styling is handled by CSS based on filter-collapsed class
     });
     
