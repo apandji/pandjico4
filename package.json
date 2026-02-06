@@ -4,7 +4,8 @@
   "description": "Portfolio site",
   "scripts": {
     "build": "node build.js",
-    "serve": "python3 -m http.server 8000",
+    "serve": "lsof -ti:8000 | xargs kill -9 2>/dev/null || true && python3 -m http.server 8000",
+    "start": "npm run serve",
     "dev": "npm run build && npm run serve"
   }
 }
