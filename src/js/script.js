@@ -2485,31 +2485,22 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 async function loadComponentsMain() {
-    // Determine base path based on current page location
-    // For GitHub Pages compatibility: handle both root and subdirectory deployments
-    const pathname = window.location.pathname;
-    const pathParts = pathname.split('/').filter(function(part) {
-        return part && part !== 'index.html';
-    });
-    
-    // Check if we're in a subdirectory (like /works/)
-    const isInSubdirectory = pathname.includes('/works/');
-    
-    // Calculate basePath: go up one level for each directory we're in
+    // Derive the site root from the script's own URL.
+    // script.js always lives at {siteRoot}/src/js/script.js, so stripping
+    // that suffix gives us the absolute site root path.
+    // This works on GitHub Pages (/pandjico4/), Hostinger (/), localhost, etc.
     let basePath = '';
-    if (isInSubdirectory) {
-        // We're in /works/ subdirectory, need to go up one level
-        basePath = '../';
-    } else if (pathParts.length > 0) {
-        // We're in a GitHub Pages subdirectory (e.g., /username/repo/)
-        // Count how many levels deep we are (excluding the filename)
-        const depth = pathParts.length;
-        if (depth > 0) {
-            basePath = '../'.repeat(depth);
+    var scriptEl = document.querySelector('script[src*="script.js"]');
+    if (scriptEl && scriptEl.src) {
+        try {
+            var scriptUrl = new URL(scriptEl.src);
+            basePath = scriptUrl.pathname.replace(/src\/js\/script\.js.*$/, '');
+        } catch(e) {
+            basePath = '';
         }
     }
     
-    console.log('Loading components with basePath: ' + basePath + ', pathname: ' + pathname);
+    console.log('Loading components with basePath: ' + basePath + ', pathname: ' + window.location.pathname);
     
     // Only load components if they don't already exist
     const sidebarExists = document.getElementById('sidebar');
