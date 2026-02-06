@@ -3010,10 +3010,10 @@ function initializeCarouselScroll(container, dotsContainer) {
         return;
     }
     
-    // Mobile: SIMPLIFIED - cards in normal flow, CSS handles snapping
+    // Mobile: Clean sticky-based stacking carousel
+    // Cards use position: sticky in CSS, JS only handles z-index and dots
     let currentIndex = 0;
     
-    // Simple setup - just ensure cards are in normal flow
     function setupCards() {
         if (cards.length === 0) return;
         
@@ -3025,42 +3025,35 @@ function initializeCarouselScroll(container, dotsContainer) {
         const ctaHeight = cta ? cta.offsetHeight : 0;
         const cardHeight = viewportHeight - headerHeight - ctaHeight;
         
-        
         if (cardHeight <= 0) return;
         
-        // Set all cards to same height with border-box
+        // Set CSS variables for card height calculation
+        document.documentElement.style.setProperty('--header-height', headerHeight + 'px');
+        document.documentElement.style.setProperty('--cta-height', ctaHeight + 'px');
+        
+        // Cards use sticky positioning from CSS - don't override
+        // Just ensure heights are set correctly
         cards.forEach(function(card, index) {
-            card.style.position = 'relative'; // Normal flow - SIMPLIFIED
             card.style.boxSizing = 'border-box';
             card.style.height = cardHeight + 'px';
             card.style.minHeight = cardHeight + 'px';
             card.style.maxHeight = cardHeight + 'px';
-            card.style.margin = '0';
-            card.style.padding = '0';
-            // Remove any transforms - let CSS handle it
-            card.style.transform = 'none';
-            
         });
         
-        // Add padding-bottom to container so last card can scroll fully into view
-        // This ensures the CTA on the last card is visible above the fixed "SEE ALL WORK" CTA
+        // Add padding-bottom so last card can scroll fully into view
         cardsContainer.style.paddingBottom = ctaHeight + 'px';
-        
-        // Container height is automatic (cards in flow)
-        // CSS scroll-snap handles the snapping
         
         return cardHeight;
     }
     
-    // Expose recalculation function for layout updates
+    // Expose recalculation function
     window.recalculateCarousel = function() {
         setupCards();
         updateCardStates();
     };
     
-    // PHYSICAL CARD CAROUSEL - Simplified for snappy, tactile feel
-    // Let CSS scroll-snap handle the snapping, JS handles visual stacking
-    
+    // Enhanced state update with tactile, weighty animations
+    // Sticky positioning handles the stacking, JS enhances with smooth transitions
     function updateCardStates() {
         if (cards.length === 0) return;
         
@@ -3068,59 +3061,41 @@ function initializeCarouselScroll(container, dotsContainer) {
         const cardHeight = cards[0].offsetHeight;
         if (!cardHeight || cardHeight <= 0) return;
         
-        // Calculate which card we're on based on scroll position
+        // Calculate active card index and scroll progress
         const exactIndex = scrollTop / cardHeight;
         const activeIndex = Math.round(exactIndex);
         const clampedIndex = Math.max(0, Math.min(activeIndex, cards.length - 1));
+        const progress = exactIndex - Math.floor(exactIndex); // 0 to 1 progress into next card
         
-        // How far we've scrolled past the current card's start (0 to 1)
-        const progress = exactIndex - Math.floor(exactIndex);
-        
-        // Update each card's visual state
+        // Set z-index: later cards (higher index) get higher z-index
+        // This ensures the next card appears on top when scrolling
         cards.forEach(function(card, index) {
-            card.classList.remove('active', 'prev', 'next');
+            // Higher index = higher z-index (so next card stacks on top)
+            // Add 10 to base z-index to ensure proper stacking
+            card.style.zIndex = String(10 + index);
             
             if (index === clampedIndex) {
-                // ACTIVE CARD - sits at top, fully visible
+                // ACTIVE CARD - fully visible, strongest shadow
                 card.classList.add('active');
-                card.style.transform = 'translateY(0) scale(1)';
-                card.style.zIndex = String(20);
-                card.style.opacity = '1';
-                card.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.4)';
+                card.classList.remove('next', 'prev');
+                card.style.transform = 'none';
                 
-            } else if (index === clampedIndex + 1) {
-                // NEXT CARD - slides up from below, stacking on top
+            } else if (index === clampedIndex + 1 && progress > 0) {
+                // NEXT CARD - sliding up
                 card.classList.add('next');
-                
-                // Calculate how much to pull up (based on scroll progress)
-                const pullUp = cardHeight * progress;
-                
-                // Slight scale effect as it comes up (starts at 0.98, ends at 1)
-                const scale = 0.98 + (0.02 * progress);
-                
-                card.style.transform = `translateY(${-Math.round(pullUp)}px) scale(${scale.toFixed(3)})`;
-                card.style.zIndex = String(30); // Above active card
-                card.style.opacity = '1';
-                
-                // Shadow intensifies as card rises
-                const shadowIntensity = 0.2 + (0.4 * progress);
-                const shadowBlur = 8 + (24 * progress);
-                card.style.boxShadow = `0 ${-4 - (8 * progress)}px ${shadowBlur}px rgba(0, 0, 0, ${shadowIntensity})`;
+                card.classList.remove('active', 'prev');
+                card.style.transform = 'none';
                 
             } else if (index < clampedIndex) {
-                // PREVIOUS CARDS - hidden behind
+                // PREVIOUS CARDS - behind
                 card.classList.add('prev');
-                card.style.transform = 'translateY(-100%) scale(0.95)';
-                card.style.zIndex = String(5 + index);
-                card.style.opacity = '0';
-                card.style.boxShadow = 'none';
+                card.classList.remove('active', 'next');
+                card.style.transform = 'none';
                 
             } else {
                 // FUTURE CARDS - waiting below
-                card.style.transform = 'translateY(0) scale(1)';
-                card.style.zIndex = String(5 + index);
-                card.style.opacity = '1';
-                card.style.boxShadow = 'none';
+                card.classList.remove('active', 'next', 'prev');
+                card.style.transform = 'none';
             }
         });
         
@@ -3137,107 +3112,59 @@ function initializeCarouselScroll(container, dotsContainer) {
         }
     }
     
-    // Track scroll and update card states for stacking effect
+    // Smooth scroll handler with requestAnimationFrame for tactile feel
     let rafId = null;
-    let scrollTimeout = null;
-    let isScrolling = false;
-    let lastScrollTop = 0;
-    
-    function handleScroll() {
-        const currentScrollTop = cardsContainer.scrollTop;
-        
-        // Disable transitions during active scroll to prevent bounce
-        if (!isScrolling) {
-            isScrolling = true;
-            // Ensure scroll behavior is auto for immediate snapping
-            cardsContainer.style.scrollBehavior = 'auto';
-            cards.forEach(function(card) {
-                card.style.transition = 'none';
-            });
-        }
-        
-        // Only update if scroll position changed meaningfully (reduces unnecessary updates)
-        if (Math.abs(currentScrollTop - lastScrollTop) >= 1) {
-            lastScrollTop = currentScrollTop;
-            updateCardStates();
-        }
-    }
-    
     cardsContainer.addEventListener('scroll', function() {
-        // Use requestAnimationFrame for smooth updates, but throttle it
+        // Use requestAnimationFrame for smooth, weighty updates
         if (!rafId) {
             rafId = requestAnimationFrame(function() {
-                handleScroll();
+                updateCardStates();
                 rafId = null;
             });
         }
-        
-        // Clear any pending scroll end timeout
-        if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
-        }
-        
-        // Re-enable transitions after scroll ends (but keep scroll-behavior as auto)
-        scrollTimeout = setTimeout(function() {
-            isScrolling = false;
-            // Keep scroll-behavior as auto for immediate snapping
-            cardsContainer.style.scrollBehavior = 'auto';
-            cards.forEach(function(card) {
-                card.style.transition = '';
-            });
-        }, 150);
     }, { passive: true });
     
-    // Also handle scrollend event for more reliable detection
-    if ('onscrollend' in window) {
-        cardsContainer.addEventListener('scrollend', function() {
-            const finalScrollTop = cardsContainer.scrollTop;
-            const finalCardHeight = cards[0].offsetHeight;
-            const finalIndex = Math.round(finalScrollTop / finalCardHeight);
-            const expectedSnap = finalIndex * finalCardHeight;
-            
-            isScrolling = false;
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-            // Keep scroll-behavior as auto for immediate snapping
-            cardsContainer.style.scrollBehavior = 'auto';
-            cards.forEach(function(card) {
-                card.style.transition = '';
-            });
-            
-            // Force perfect alignment - if scroll position is off, snap it immediately
-            const snapOffset = finalScrollTop - expectedSnap;
-            if (Math.abs(snapOffset) > 1) {
-                cardsContainer.scrollTop = expectedSnap;
-                lastSnappedPosition = expectedSnap;
-            } else {
-                lastSnappedPosition = finalScrollTop;
-            }
-            
-            // Final update to ensure correct state
-            updateCardStates();
-        }, { passive: true });
-    }
-    
-    // Dot click handlers - scroll to card
+    // Dot click handlers with tactile feedback
     dots.forEach(function(dot, index) {
-        dot.addEventListener('click', function() {
+        dot.addEventListener('click', function(e) {
+            e.preventDefault();
             if (cards[index] && cards.length > 0) {
                 const cardHeight = cards[0].offsetHeight;
+                // Smooth scroll with natural easing
                 cardsContainer.scrollTo({
                     top: cardHeight * index,
                     behavior: 'smooth'
                 });
+                // Tactile feedback - briefly scale dot
+                dot.style.transform = 'scale(1.5)';
+                setTimeout(function() {
+                    if (dot.classList.contains('active')) {
+                        dot.style.transform = 'scale(1.3)';
+                    } else {
+                        dot.style.transform = '';
+                    }
+                }, 150);
             }
         });
+        
+        // Touch feedback for mobile
+        dot.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(1.4)';
+        }, { passive: true });
+        
+        dot.addEventListener('touchend', function() {
+            if (this.classList.contains('active')) {
+                this.style.transform = 'scale(1.3)';
+            } else {
+                this.style.transform = '';
+            }
+        }, { passive: true });
     });
     
-    // SIMPLIFIED: Initialize
+    // Initialize
     setTimeout(function() {
         setupCards();
         cardsContainer.scrollTop = 0;
-        lastSnappedPosition = 0;
         currentIndex = 0;
         updateCardStates();
     }, 100);
