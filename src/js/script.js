@@ -2935,10 +2935,10 @@ function generateFeaturedProjects(projects) {
         const blurbContainer = document.createElement('div');
         blurbContainer.className = 'featured-project-blurb';
         
-        // Title
+        // Title with arrow
         const h3 = document.createElement('h3');
         h3.className = 'featured-project-title';
-        h3.textContent = project.title || project.slug;
+        h3.innerHTML = (project.title || project.slug) + ' <i data-lucide="arrow-right" class="title-arrow"></i>';
         blurbContainer.appendChild(h3);
         
         // Description
@@ -2948,12 +2948,6 @@ function generateFeaturedProjects(projects) {
             p.textContent = project.description;
             blurbContainer.appendChild(p);
         }
-        
-        // CTA button (always visible on mobile, revealed on hover desktop)
-        const ctaButton = document.createElement('span');
-        ctaButton.className = 'featured-project-cta';
-        ctaButton.innerHTML = 'SEE PROJECT <i data-lucide="arrow-right" class="cta-icon"></i>';
-        blurbContainer.appendChild(ctaButton);
         
         imageContainer.appendChild(blurbContainer);
         link.appendChild(imageContainer);

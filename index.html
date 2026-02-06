@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=7">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         // Immediate error detection for iOS
@@ -33,28 +33,36 @@
             }
         })();
     </script>
-    <script src="src/js/script.js?v=60" defer></script>
     <script>
-        // Register Service Worker for caching
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                // Detect base path for GitHub Pages (works for both root and subdirectory)
-                var basePath = window.location.pathname.split('/').slice(0, -1).join('/');
-                if (basePath && !basePath.endsWith('/')) {
-                    basePath += '/';
-                }
-                if (!basePath) {
-                    basePath = '/';
-                }
-                var swPath = basePath + 'sw.js';
-                navigator.serviceWorker.register(swPath).then(function(registration) {
-                    console.log('Service Worker registered:', registration.scope);
+        // AGGRESSIVE SERVICE WORKER REMOVAL - Run IMMEDIATELY before any other scripts
+        (function() {
+            'use strict';
+            if ('serviceWorker' in navigator) {
+                // Unregister ALL service workers immediately
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    var unregisterPromises = [];
+                    for(var i = 0; i < registrations.length; i++) {
+                        unregisterPromises.push(registrations[i].unregister());
+                    }
+                    return Promise.all(unregisterPromises);
+                }).then(function() {
+                    // Clear ALL caches
+                    if ('caches' in window) {
+                        return caches.keys().then(function(names) {
+                            return Promise.all(names.map(function(name) {
+                                return caches.delete(name);
+                            }));
+                        });
+                    }
+                }).then(function() {
+                    console.log('Service workers unregistered and caches cleared');
                 }).catch(function(error) {
-                    console.log('Service Worker registration failed:', error);
+                    console.error('Error removing service workers:', error);
                 });
-            });
-        }
+            }
+        })();
     </script>
+    <script src="src/js/script.js?v=63" defer></script>
     <script>
         // Verify script loaded and show failure indicator if needed
         (function() {
