@@ -4,12 +4,12 @@
 
 :root {
     /* Colors */
-    --color-black: #000000;
-    --color-white: #ffffff;
-    --color-sidebar-bg: #ffffff;
-    --color-border: #000000;
-    --color-border-subtle: #000000;
-    --color-text: #000000;
+    --color-black: #1a1816;
+    --color-white: #efece6;
+    --color-sidebar-bg: #efece6;
+    --color-border: #3a382f;
+    --color-border-subtle: #3a382f;
+    --color-text: #3a382f;
     --color-text-subtle: #666666;
     
     /* Type Scale */
@@ -60,6 +60,13 @@ html, body{
     padding: 0;
     height: 100vh;
     line-height: var(--line-height-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+::selection{
+    background: rgba(26, 24, 22, 0.12);
+    color: var(--color-text);
 }
 
 body{
@@ -81,6 +88,48 @@ body{
         background-color: var(--color-black);
         overflow: hidden;
         display: block; /* Override grid layout */
+    }
+}
+
+/* ============================================
+   Film Grain Overlay
+   Analog texture over the entire viewport.
+   Uses SVG feTurbulence for real fractal noise —
+   no image assets, GPU-composited.
+   ============================================ */
+
+html::after{
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    animation: grain 8s steps(10) infinite;
+    will-change: transform;
+}
+
+@keyframes grain{
+    0%, 100%{ transform: translate(0, 0); }
+    10%{ transform: translate(-5%, -10%); }
+    20%{ transform: translate(-15%, 5%); }
+    30%{ transform: translate(7%, -25%); }
+    40%{ transform: translate(-5%, 25%); }
+    50%{ transform: translate(-15%, 10%); }
+    60%{ transform: translate(15%, 0%); }
+    70%{ transform: translate(0%, 15%); }
+    80%{ transform: translate(3%, 35%); }
+    90%{ transform: translate(-10%, 10%); }
+}
+
+@media (prefers-reduced-motion: reduce){
+    html::after{
+        animation: none;
     }
 }
 
@@ -140,7 +189,7 @@ body{
 }
 
 .logo-header a:hover .logo-box{
-    transform: translateY(-2px);
+    transform: translateY(1px);
 }
 
 .logo-text{
@@ -643,9 +692,9 @@ body{
 }
 
 .filter-tag:hover{
-    background-color: rgba(0, 0, 0, 0.05);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px); /* Lift effect */
+    background-color: rgba(26, 24, 22, 0.04);
+    box-shadow: inset 0 1px 2px rgba(26, 24, 22, 0.08);
+    transform: translateY(1px);
 }
 
 .filter-tag:active{
@@ -881,11 +930,11 @@ body{
     letter-spacing: 0.02em; /* Subtle letter-spacing */
 }
 
-/* Hover states - card lift effect */
+/* Hover states - tactile press effect */
 .sidebar li:hover .project-link-wrapper{
-    background-color: rgba(0, 0, 0, 0.05);
-    transform: translateY(-2px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    background-color: rgba(26, 24, 22, 0.04);
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 3px rgba(26, 24, 22, 0.06);
 }
 
 .sidebar li:not(:has(.project-link-wrapper)):hover > a{
@@ -1144,7 +1193,7 @@ body{
         align-items: center;
         justify-content: space-between;
         padding: 1.25rem 1.5rem;
-        background: rgba(0, 0, 0, 0.95);
+        background: rgba(26, 24, 22, 0.95);
         backdrop-filter: blur(8px);
         color: var(--color-white);
         text-decoration: none;
@@ -1165,7 +1214,8 @@ body{
     
     .featured-work-cta:hover,
     .featured-work-cta:focus{
-        background: rgba(0, 0, 0, 1);
+        color: var(--color-black);
+        background: var (--color-white)
         border-top-color: var(--color-white);
         outline: none;
     }
@@ -1490,7 +1540,7 @@ body{
     left: 0;
     right: 0;
     height: 60%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+    background: linear-gradient(to top, rgba(26, 24, 22, 0.95) 0%, rgba(26, 24, 22, 0.85) 30%, rgba(26, 24, 22, 0.7) 50%, rgba(26, 24, 22, 0.4) 70%, transparent 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -1788,9 +1838,9 @@ body{
 }
 
 .works-cta-link:hover{
-    border-color: rgba(0, 0, 0, 0.2);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-color: rgba(26, 24, 22, 0.2);
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 3px rgba(26, 24, 22, 0.06);
 }
 
 .works-cta-link:hover::before{
@@ -2088,7 +2138,7 @@ body{
     width: 3rem;
     height: 3rem;
     padding: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(26, 24, 22, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: none;
@@ -2099,12 +2149,12 @@ body{
     margin: 0;
     pointer-events: auto; /* Ensure button is clickable */
     touch-action: manipulation; /* Optimize for touch */
-    transition: background-color 0.2s var(--ease-weighted), 
+    transition: background-color 0.2s var(--ease-weighted),
                 transform 0.15s cubic-bezier(0.4, 0.0, 0.2, 1),
                 box-shadow 0.2s var(--ease-weighted);
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(26, 24, 22, 0.15);
 }
 
 /* Visual connection - subtle line extending toward sidebar */
@@ -2132,15 +2182,15 @@ body.sidebar-open .sidebar-toggle::before{
 }
 
 .sidebar-toggle:hover{
-    background-color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(26, 24, 22, 0.75);
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px rgba(26, 24, 22, 0.25);
 }
 
 .sidebar-toggle:active{
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(26, 24, 22, 0.9);
     transform: scale(0.95);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 4px rgba(26, 24, 22, 0.2);
 }
 
 .sidebar-toggle:focus-visible{
@@ -2395,7 +2445,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
         left: 0;
         width: 100vw;
         height: 100vh;
-        background-color: rgba(0, 0, 0, 0.3);
+        background-color: rgba(26, 24, 22, 0.3);
         backdrop-filter: blur(2px);
         -webkit-backdrop-filter: blur(2px);
         z-index: 150;
