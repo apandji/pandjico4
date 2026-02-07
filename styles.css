@@ -59,6 +59,7 @@ html, body{
     margin: 0;
     padding: 0;
     height: 100vh;
+    height: 100dvh;
     line-height: var(--line-height-base);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -73,6 +74,7 @@ body{
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
@@ -81,6 +83,7 @@ body{
         margin: 0;
         padding: 0;
         height: 100vh;
+        height: 100dvh;
         overflow: hidden; /* No scrolling - fixed viewport */
     }
     
@@ -141,6 +144,7 @@ html::after{
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     padding: 0;
     height: 100vh;
+    height: 100dvh;
     position: sticky;
     top: 0;
     background-color: var(--color-black);
@@ -991,6 +995,7 @@ html::after{
     padding: var(--spacing-content-padding);
     max-width: var(--content-max-width);
     height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
@@ -1174,15 +1179,17 @@ html::after{
         width: 100vw;
         margin-left: 0;
         margin-right: 0;
-        height: calc(100vh - var(--header-height, 9rem)); /* Fill remaining viewport after header */
-        max-height: calc(100vh - var(--header-height, 9rem)); /* Prevent overflow */
+        height: calc(100vh - var(--header-height, 9rem));
+        height: calc(100dvh - var(--header-height, 9rem));
+        max-height: calc(100vh - var(--header-height, 9rem));
+        max-height: calc(100dvh - var(--header-height, 9rem));
         display: flex;
         flex-direction: column;
         position: relative;
         overflow: hidden; /* Prevent any overflow */
     }
     
-    /* Featured Work CTA at bottom - fixed to viewport - subtle hierarchy */
+    /* Featured Work CTA at bottom - frosted linen over the image */
     .featured-work-cta{
         position: fixed;
         bottom: 0;
@@ -1193,16 +1200,18 @@ html::after{
         align-items: center;
         justify-content: space-between;
         padding: 1.25rem 1.5rem;
-        background: rgba(26, 24, 22, 0.95);
-        backdrop-filter: blur(8px);
-        color: var(--color-white);
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(239, 236, 230, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        color: var(--color-black);
         text-decoration: none;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 0.875rem;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        border-top: 1px solid var(--color-white);
+        border-top: 1px solid rgba(26, 24, 22, 0.1);
         transition: background 0.3s var(--ease-weighted), border-color 0.3s var(--ease-weighted);
         flex-shrink: 0;
         width: 100vw;
@@ -1211,26 +1220,26 @@ html::after{
         height: auto;
         min-height: 4.5rem;
     }
-    
+
     .featured-work-cta:hover,
     .featured-work-cta:focus{
-        color: var(--color-black);
-        background: var (--color-white)
-        border-top-color: var(--color-white);
+        background: rgba(239, 236, 230, 0.92);
+        border-top-color: rgba(26, 24, 22, 0.15);
         outline: none;
     }
-    
+
     .featured-work-cta .section-icon{
         width: 1rem;
         height: 1rem;
-        opacity: 0.8;
+        color: var(--color-black);
+        opacity: 0.6;
         transition: transform 0.3s var(--ease-weighted), opacity 0.3s var(--ease-weighted);
     }
-    
+
     .featured-work-cta:hover .section-icon,
     .featured-work-cta:focus .section-icon{
         transform: translateX(4px);
-        opacity: 1;
+        opacity: 0.9;
     }
 }
 
@@ -1405,9 +1414,12 @@ html::after{
 @media screen and (max-width: 768px) {
     .featured-project-card{
         width: 100vw; /* Full viewport width - no margins */
-        height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem)); /* Cards fill viewport minus header and CTA */
+        height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
+        height: calc(100dvh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
         min-height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
-        max-height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem)); /* Prevent overflow */
+        min-height: calc(100dvh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
+        max-height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
+        max-height: calc(100dvh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
         margin: 0;
         padding: 0;
         box-sizing: border-box; /* Include border in height calculation */
@@ -2241,14 +2253,15 @@ body.sidebar-open .sidebar-toggle-icon-close{
         grid-template-rows: none;
         display: block;
         height: 100vh;
+        height: 100dvh;
         overflow: hidden; /* No scrolling - fixed viewport */
     }
-    
+
     /* Only prevent scrolling when sidebar is open */
     body.sidebar-open{
         overflow: hidden;
     }
-    
+
     .sidebar{
         position: fixed;
         top: 0;
@@ -2256,6 +2269,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
         width: 85vw; /* Use viewport width, leave space for toggle button */
         max-width: 20rem; /* Max width for comfortable reading */
         height: 100vh;
+        height: 100dvh;
         overflow-y: auto; /* Ensure sidebar can scroll */
         overflow-x: visible; /* Allow dates to be visible */
         z-index: 200;
@@ -2445,6 +2459,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
         left: 0;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
         background-color: rgba(26, 24, 22, 0.3);
         backdrop-filter: blur(2px);
         -webkit-backdrop-filter: blur(2px);
@@ -2463,6 +2478,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
     .content{
         width: 100%;
         height: 100vh;
+        height: 100dvh;
         padding: 0 !important;
         margin: 0 !important;
         overflow: hidden; /* No scrolling - fixed viewport */
@@ -2487,7 +2503,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
         height: auto;
     }
     
-    /* Fixed header on mobile */
+    /* Fixed header on mobile — compact to maximize card height */
     .home-header{
         position: fixed;
         top: 0;
@@ -2495,7 +2511,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
         right: 0;
         z-index: 100;
         margin: 0 !important;
-        padding: 3.5rem 1.5rem 1.5rem 1.5rem; /* Top padding accounts for menu button */
+        padding: 1.25rem 1.5rem 1rem 1.5rem;
         background-color: var(--color-black);
         border: none;
         border-bottom: 1px solid var(--color-white);
@@ -2671,16 +2687,16 @@ body.sidebar-open .sidebar-toggle-icon-close{
     
     .home-header h1{
         color: var(--color-white);
-        font-size: 2rem;
-        margin-bottom: 1.25rem; /* More space for hierarchy */
+        font-size: 1.75rem;
+        margin-bottom: 0.625rem;
     }
-    
+
     .home-tagline{
         color: var(--color-white);
         opacity: 0.9;
-        font-size: 0.95rem; /* Reduced from 1.05rem (~10% smaller) */
-        margin-top: 0; /* Remove extra margin */
-        line-height: 1.5; /* Slightly tighter line height */
+        font-size: 0.875rem;
+        margin-top: 0;
+        line-height: 1.45;
     }
     
     

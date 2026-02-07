@@ -67,6 +67,292 @@ function showJSFailureIndicator(message) {
     }
 }
 
+// ============================================
+// Haptic feedback (iOS Safari 17.4+ / Android vibration API)
+// Based on ios-haptics by tijn.dev — MIT license
+// ============================================
+var supportsHaptics = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
+function haptic() {
+    try {
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+            return;
+        }
+        if (!supportsHaptics) return;
+        var labelEl = document.createElement('label');
+        labelEl.ariaHidden = 'true';
+        labelEl.style.display = 'none';
+        var inputEl = document.createElement('input');
+        inputEl.type = 'checkbox';
+        inputEl.setAttribute('switch', '');
+        labelEl.appendChild(inputEl);
+        document.head.appendChild(labelEl);
+        labelEl.click();
+        document.head.removeChild(labelEl);
+    } catch (e) {}
+}
+
+// ============================================
+// Breathing sine wave — mobile header bottom edge
+// Replaces the static border with a living line that
+// occasionally wakes, breathes, then settles back to flat.
+// ============================================
+function initializeHeaderWave() {
+    if (window.innerWidth > 768) return;
+    var header = document.querySelector('.home-header');
+    if (!header) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // Remove border — SVG handles the visual edge
+    header.style.borderBottom = 'none';
+    // Depth shadow — header feels elevated above the cards
+    header.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)';
+
+    // --- Name slowGlitch (Pandji ↔ Andrew) synced with wave ---
+    var pandjiNameEl = document.getElementById('pandjiName');
+    var slowGlitchInterval = null;
+    var currentNameText = pandjiNameEl ? pandjiNameEl.textContent : 'Pandji';
+    var targetNameText = 'Pandji';
+    
+    function getRandomChar() {
+        const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+    
+    function slowGlitchName() {
+        if (!pandjiNameEl) return;
+        
+        const targetArray = targetNameText.split('');
+        const currentArray = currentNameText.split('');
+        
+        // Change 1-2 characters at a time for calming effect
+        let changed = 0;
+        const maxChanges = Math.random() < 0.4 ? 2 : 1;
+        
+        // Gradually reveal target text, character by character
+        for (let i = 0; i < Math.max(currentArray.length, targetArray.length) && changed < maxChanges; i++) {
+            if (i < targetArray.length) {
+                if (i >= currentArray.length || currentArray[i] !== targetArray[i]) {
+                    // 35% chance to change this character
+                    if (Math.random() < 0.35) {
+                        // Sometimes show target char, sometimes random char
+                        if (Math.random() < 0.7) {
+                            if (i >= currentArray.length) {
+                                currentArray.push(targetArray[i]);
+                            } else {
+                                currentArray[i] = targetArray[i];
+                            }
+                        } else {
+                            if (i >= currentArray.length) {
+                                currentArray.push(getRandomChar());
+                            } else {
+                                currentArray[i] = getRandomChar();
+                            }
+                        }
+                        changed++;
+                    }
+                }
+            }
+        }
+        
+        currentNameText = currentArray.join('');
+        pandjiNameEl.textContent = currentNameText;
+        
+        // If we've reached the target, stop glitching
+        if (currentNameText === targetNameText) {
+            if (slowGlitchInterval) {
+                clearInterval(slowGlitchInterval);
+                slowGlitchInterval = null;
+            }
+            pandjiNameEl.textContent = targetNameText;
+            currentNameText = targetNameText;
+        }
+    }
+    
+    function startSlowGlitch(target) {
+        if (!pandjiNameEl) return;
+        targetNameText = target;
+        currentNameText = pandjiNameEl.textContent;
+        
+        // Clear any existing interval
+        if (slowGlitchInterval) {
+            clearInterval(slowGlitchInterval);
+        }
+        
+        // Start slow glitch - 200ms interval (calming, deliberate)
+        slowGlitchName();
+        slowGlitchInterval = setInterval(slowGlitchName, 200);
+        
+        // Ensure we reach target after reasonable time
+        setTimeout(function() {
+            if (slowGlitchInterval) {
+                clearInterval(slowGlitchInterval);
+                slowGlitchInterval = null;
+            }
+            if (pandjiNameEl) {
+                pandjiNameEl.textContent = targetNameText;
+                currentNameText = targetNameText;
+            }
+        }, 1500);
+    }
+
+    // --- SVG setup ---
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+
+    var maxAmp = 1.5;     // peak breathing amplitude in px (reduced for more subtle, natural feel)
+    var baseAmp = 0.6;    // always-on subtle wave — the line is alive
+    var baseFreq = 4;     // base frequency
+    var svgH = maxAmp * 2 + 2;
+    var center = maxAmp + 1;
+    
+    // Random variation state for natural feel
+    var freqVariation = 0;
+    var freqVariationTarget = 0;
+    var lastFreqUpdate = performance.now();
+
+    svg.style.cssText = 'position:absolute;bottom:-' + center + 'px;left:0;width:100%;height:' + svgH + 'px;pointer-events:none;z-index:1;overflow:visible;';
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    var fillPath = document.createElementNS(svgNS, 'path');
+    fillPath.setAttribute('fill', '#1a1816');
+    fillPath.setAttribute('stroke', 'none');
+    svg.appendChild(fillPath);
+
+    var strokePath = document.createElementNS(svgNS, 'path');
+    strokePath.setAttribute('fill', 'none');
+    strokePath.setAttribute('stroke', '#efece6');
+    strokePath.setAttribute('stroke-width', '1');
+    strokePath.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.appendChild(strokePath);
+
+    header.appendChild(svg);
+
+    // Animation state
+    var activity = 0;
+    var state = 'idle';
+    var prevState = '';
+    var stateStart = 0;
+    var breathDur = 0;
+    var idleStart = performance.now();
+    var nextWake = 4000 + Math.random() * 8000;
+
+    function buildPaths(w, amp, ph, freq, timeNoise) {
+        var pts = [];
+        // Subtle noise scale for natural variation
+        var noiseScale = 0.12;
+        
+        for (var x = 0; x <= w; x += 3) {
+            // Base wave with variable frequency
+            var baseWave = Math.sin((x / w) * freq * Math.PI * 2 + ph);
+            
+            // Add subtle secondary frequency for organic feel (slower, smaller amplitude)
+            var secondaryWave = Math.sin((x / w) * freq * 0.65 * Math.PI * 2 + ph * 1.4) * 0.25;
+            
+            // Add subtle tertiary wave for more natural complexity
+            var tertiaryWave = Math.sin((x / w) * freq * 1.3 * Math.PI * 2 + ph * 0.8) * 0.15;
+            
+            // Use position-based noise (not random) for consistent but varied feel
+            // This creates natural variation that doesn't flicker
+            var positionNoise = Math.sin((x / w) * 7 + timeNoise) * noiseScale;
+            
+            // Combine waves with position-based noise
+            var combinedWave = baseWave + secondaryWave + tertiaryWave + positionNoise;
+            
+            var y = center + amp * combinedWave;
+            pts.push(x + ',' + y.toFixed(2));
+        }
+        var stroke = 'M' + pts.join(' L');
+        var fill = 'M0,0 L' + w + ',0';
+        for (var i = pts.length - 1; i >= 0; i--) {
+            fill += ' L' + pts[i];
+        }
+        fill += ' Z';
+        return { fill: fill, stroke: stroke };
+    }
+
+    function tick(now) {
+        var w = header.offsetWidth;
+        if (w > 0) {
+            svg.setAttribute('viewBox', '0 0 ' + w + ' ' + svgH);
+
+            // State machine
+            if (state === 'idle') {
+                activity = 0;
+                if (now - idleStart > nextWake) {
+                    state = 'waking';
+                    stateStart = now;
+                }
+            } else if (state === 'waking') {
+                var t = Math.min((now - stateStart) / 800, 1);
+                activity = t * t;
+                if (t >= 1) {
+                    state = 'breathing';
+                    stateStart = now;
+                    breathDur = 3500 + Math.random() * 2000;
+                }
+            } else if (state === 'breathing') {
+                activity = 1;
+                if (now - stateStart > breathDur) {
+                    state = 'settling';
+                    stateStart = now;
+                }
+            } else if (state === 'settling') {
+                var t = Math.min((now - stateStart) / 1200, 1);
+                activity = 1 - t * t;
+                if (t >= 1) {
+                    state = 'idle';
+                    activity = 0;
+                    idleStart = now;
+                    nextWake = 8000 + Math.random() * 15000;
+                }
+            }
+
+            // Trigger name slowGlitch on state transitions
+            if (state !== prevState) {
+                if (state === 'waking') {
+                    startSlowGlitch('Andrew');
+                } else if (state === 'settling') {
+                    startSlowGlitch('Pandji');
+                }
+                prevState = state;
+            }
+
+            // Amplitude: constant base wave + breathing swell (more subtle)
+            var breath = Math.sin(now * 0.002) * 0.5 + 0.5;
+            // Add subtle amplitude variation using sine wave (smooth, not random)
+            var ampVariation = 1 + Math.sin(now * 0.0015) * 0.08; // ±4% smooth variation
+            var amp = (baseAmp + activity * (maxAmp - baseAmp) * (0.4 + 0.6 * breath)) * ampVariation;
+            
+            // Phase with subtle organic variation
+            var phase = now * 0.0004 + Math.sin(now * 0.0008) * 0.15; // Subtle phase modulation
+            
+            // Gradually vary frequency for natural feel (smooth transitions)
+            if (now - lastFreqUpdate > 2500) { // Update frequency target every 2.5 seconds
+                freqVariationTarget = (Math.random() - 0.5) * 0.6; // ±0.3 frequency variation
+                lastFreqUpdate = now;
+            }
+            // Smoothly interpolate to target frequency variation
+            freqVariation += (freqVariationTarget - freqVariation) * 0.015; // Slower interpolation for smoother feel
+            var freq = baseFreq + freqVariation;
+            
+            // Time-based noise for position variation (smooth, not flickering)
+            var timeNoise = now * 0.0003;
+
+            var paths = buildPaths(w, amp, phase, freq, timeNoise);
+            fillPath.setAttribute('d', paths.fill);
+            strokePath.setAttribute('d', paths.stroke);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+}
+
+// Initialize wave when DOM is ready (script is deferred)
+document.addEventListener('DOMContentLoaded', initializeHeaderWave);
+
 // Component loader - loads reusable HTML components
 // Safari iOS compatible version with fallback
 async function loadComponent(componentName, insertMethod, options) {
@@ -181,7 +467,8 @@ async function loadComponent(componentName, insertMethod, options) {
                                     
                                     // Update card heights with exact CTA height
                                     const cards = document.querySelectorAll('.featured-project-card');
-                                    const cardHeight = window.innerHeight - headerHeight - ctaHeight;
+                                    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                                    const cardHeight = vpHeight - headerHeight - ctaHeight;
                                     cards.forEach(function(card) {
                                         card.style.height = cardHeight + 'px';
                                         card.style.minHeight = cardHeight + 'px';
@@ -2995,98 +3282,98 @@ function initializeCarouselScroll(container, dotsContainer) {
         return;
     }
     
-    // Mobile: Clean sticky-based stacking carousel
-    // Cards use position: sticky in CSS, JS only handles z-index and dots
+    // Mobile: Clean sticky-based stacking carousel with infinite cycling
+    // Cards use position: sticky in CSS, JS handles z-index, dots, and cycling
     let currentIndex = 0;
-    
+    var realCardCount = cards.length; // 5 real project cards
+
+    // --- Clone first card for seamless forward cycling ---
+    // When the user swipes past the last card, this clone (identical to card 0)
+    // appears as the "next" card. Once snapped, we teleport scrollTop to 0.
+    var cloneCard = cards[0].cloneNode(true);
+    cloneCard.classList.add('carousel-clone');
+    cardsContainer.appendChild(cloneCard);
+
+    // All cards including the clone — used for sizing and visual states
+    var allCards = cardsContainer.querySelectorAll('.featured-project-card');
+
     function setupCards() {
-        if (cards.length === 0) return;
-        
-        // Calculate card height from viewport
-        const viewportHeight = window.innerHeight;
+        if (allCards.length === 0) return;
+
+        // Use visualViewport for accurate height on iOS Safari (excludes URL bar)
+        const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         const header = document.querySelector('.home-header');
         const headerHeight = header ? header.offsetHeight : 0;
         const cta = document.getElementById('featuredWorkCta');
         const ctaHeight = cta ? cta.offsetHeight : 0;
         const cardHeight = viewportHeight - headerHeight - ctaHeight;
-        
+
         if (cardHeight <= 0) return;
-        
+
         // Set CSS variables for card height calculation
         document.documentElement.style.setProperty('--header-height', headerHeight + 'px');
         document.documentElement.style.setProperty('--cta-height', ctaHeight + 'px');
-        
-        // Cards use sticky positioning from CSS - don't override
-        // Just ensure heights are set correctly
-        cards.forEach(function(card, index) {
+
+        // Size ALL cards including clone
+        allCards.forEach(function(card) {
             card.style.boxSizing = 'border-box';
             card.style.height = cardHeight + 'px';
             card.style.minHeight = cardHeight + 'px';
             card.style.maxHeight = cardHeight + 'px';
         });
-        
-        // Add padding-bottom so last card can scroll fully into view
-        cardsContainer.style.paddingBottom = ctaHeight + 'px';
-        
+
+        // Padding so the clone (last element) can scroll fully into view.
+        // iOS Safari needs generous padding with sticky + scroll-snap.
+        cardsContainer.style.paddingBottom = cardHeight + 'px';
+
         return cardHeight;
     }
-    
+
     // Expose recalculation function
     window.recalculateCarousel = function() {
         setupCards();
         updateCardStates();
     };
-    
-    // Enhanced state update with tactile, weighty animations
-    // Sticky positioning handles the stacking, JS enhances with smooth transitions
+
+    // Update visual states on all cards (including clone)
+    // Dots map to real cards only via modular index
     function updateCardStates() {
-        if (cards.length === 0) return;
-        
+        if (allCards.length === 0) return;
+
         const scrollTop = cardsContainer.scrollTop;
-        const cardHeight = cards[0].offsetHeight;
+        const cardHeight = allCards[0].offsetHeight;
         if (!cardHeight || cardHeight <= 0) return;
-        
-        // Calculate active card index and scroll progress
+
         const exactIndex = scrollTop / cardHeight;
         const activeIndex = Math.round(exactIndex);
-        const clampedIndex = Math.max(0, Math.min(activeIndex, cards.length - 1));
-        const progress = exactIndex - Math.floor(exactIndex); // 0 to 1 progress into next card
-        
-        // Set z-index: later cards (higher index) get higher z-index
-        // This ensures the next card appears on top when scrolling
-        cards.forEach(function(card, index) {
-            // Higher index = higher z-index (so next card stacks on top)
-            // Add 10 to base z-index to ensure proper stacking
+        const clampedIndex = Math.max(0, Math.min(activeIndex, allCards.length - 1));
+        const progress = exactIndex - Math.floor(exactIndex);
+
+        allCards.forEach(function(card, index) {
             card.style.zIndex = String(10 + index);
-            
+
             if (index === clampedIndex) {
-                // ACTIVE CARD - fully visible, strongest shadow
                 card.classList.add('active');
                 card.classList.remove('next', 'prev');
                 card.style.transform = 'none';
-                
             } else if (index === clampedIndex + 1 && progress > 0) {
-                // NEXT CARD - sliding up
                 card.classList.add('next');
                 card.classList.remove('active', 'prev');
                 card.style.transform = 'none';
-                
             } else if (index < clampedIndex) {
-                // PREVIOUS CARDS - behind
                 card.classList.add('prev');
                 card.classList.remove('active', 'next');
                 card.style.transform = 'none';
-                
             } else {
-                // FUTURE CARDS - waiting below
                 card.classList.remove('active', 'next', 'prev');
                 card.style.transform = 'none';
             }
         });
-        
-        // Update dots
-        if (clampedIndex !== currentIndex) {
-            currentIndex = clampedIndex;
+
+        // Map to real card index for dots (clone maps to dot 0)
+        var dotIndex = clampedIndex >= realCardCount ? 0 : clampedIndex;
+        if (dotIndex !== currentIndex) {
+            currentIndex = dotIndex;
             dots.forEach(function(dot, index) {
                 if (index === currentIndex) {
                     dot.classList.add('active');
@@ -3096,31 +3383,107 @@ function initializeCarouselScroll(container, dotsContainer) {
             });
         }
     }
-    
-    // Smooth scroll handler with requestAnimationFrame for tactile feel
+
+    // --- Infinite cycle: teleport when scroll settles on the clone ---
+    var scrollEndTimer = null;
+    var cycleResetPending = false;
+
+    function checkCycleReset() {
+        var cardHeight = allCards[0] ? allCards[0].offsetHeight : 0;
+        if (cardHeight <= 0 || cycleResetPending) return;
+
+        var scrollTop = cardsContainer.scrollTop;
+        var cloneSnapPos = realCardCount * cardHeight;
+
+        // Forward: snapped to the clone → teleport to card 0
+        if (Math.abs(scrollTop - cloneSnapPos) < 5) {
+            cycleResetPending = true;
+            // Instant teleport — clone content is identical to card 0
+            cardsContainer.scrollTop = 0;
+            currentIndex = 0;
+            dots.forEach(function(dot, i) {
+                if (i === 0) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+            updateCardStates();
+            cycleResetPending = false;
+        }
+    }
+
+    // Smooth scroll handler with requestAnimationFrame
     let rafId = null;
     cardsContainer.addEventListener('scroll', function() {
-        // Use requestAnimationFrame for smooth, weighty updates
         if (!rafId) {
             rafId = requestAnimationFrame(function() {
                 updateCardStates();
                 rafId = null;
             });
         }
+        // Debounced scroll-end detection for cycle teleport
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = setTimeout(checkCycleReset, 150);
     }, { passive: true });
-    
+
+    // --- Backward cycling: swipe down at card 0 → jump to last real card ---
+    var touchStartY = 0;
+    var touchStartScrollTop = 0;
+
+    // Haptic on card swipe — must fire from a touch event (user activation)
+    // so iOS Safari allows the checkbox-switch haptic to trigger.
+    var hapticLastIndex = currentIndex;
+    cardsContainer.addEventListener('touchstart', function(e) {
+        var cardHeight = allCards[0] ? allCards[0].offsetHeight : 0;
+        if (cardHeight > 0) {
+            hapticLastIndex = Math.round(cardsContainer.scrollTop / cardHeight);
+        }
+        // Track touch start for backward cycling
+        touchStartY = e.touches[0].clientY;
+        touchStartScrollTop = cardsContainer.scrollTop;
+    }, { passive: true });
+
+    cardsContainer.addEventListener('touchend', function(e) {
+        var cardHeight = allCards[0] ? allCards[0].offsetHeight : 0;
+        if (cardHeight <= 0) return;
+
+        // Haptic feedback on card change
+        var predictedIndex = Math.round(cardsContainer.scrollTop / cardHeight);
+        predictedIndex = Math.max(0, Math.min(predictedIndex, allCards.length - 1));
+        if (predictedIndex !== hapticLastIndex) {
+            haptic();
+        }
+
+        // Backward cycling: at card 0, swipe down → last real card
+        var touchEndY = e.changedTouches[0].clientY;
+        var swipeDown = touchEndY - touchStartY; // positive = pulled down
+        if (touchStartScrollTop <= 2 && swipeDown > 40) {
+            var lastCardPos = (realCardCount - 1) * cardHeight;
+            // Briefly disable snap so the jump isn't fought by the browser
+            cardsContainer.style.scrollSnapType = 'none';
+            cardsContainer.scrollTop = lastCardPos;
+            requestAnimationFrame(function() {
+                cardsContainer.style.scrollSnapType = 'y mandatory';
+            });
+            currentIndex = realCardCount - 1;
+            dots.forEach(function(dot, i) {
+                if (i === realCardCount - 1) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+            updateCardStates();
+            haptic();
+        }
+    }, { passive: true });
+
     // Dot click handlers with tactile feedback
     dots.forEach(function(dot, index) {
         dot.addEventListener('click', function(e) {
             e.preventDefault();
-            if (cards[index] && cards.length > 0) {
-                const cardHeight = cards[0].offsetHeight;
-                // Smooth scroll with natural easing
+            haptic();
+            if (allCards[index] && allCards.length > 0) {
+                const cardHeight = allCards[0].offsetHeight;
                 cardsContainer.scrollTo({
                     top: cardHeight * index,
                     behavior: 'smooth'
                 });
-                // Tactile feedback - briefly scale dot
                 dot.style.transform = 'scale(1.5)';
                 setTimeout(function() {
                     if (dot.classList.contains('active')) {
@@ -3131,12 +3494,11 @@ function initializeCarouselScroll(container, dotsContainer) {
                 }, 150);
             }
         });
-        
-        // Touch feedback for mobile
+
         dot.addEventListener('touchstart', function() {
             this.style.transform = 'scale(1.4)';
         }, { passive: true });
-        
+
         dot.addEventListener('touchend', function() {
             if (this.classList.contains('active')) {
                 this.style.transform = 'scale(1.3)';
@@ -3145,7 +3507,7 @@ function initializeCarouselScroll(container, dotsContainer) {
             }
         }, { passive: true });
     });
-    
+
     // Initialize
     setTimeout(function() {
         setupCards();
@@ -3153,7 +3515,7 @@ function initializeCarouselScroll(container, dotsContainer) {
         currentIndex = 0;
         updateCardStates();
     }, 100);
-    
+
     // Update on resize
     window.addEventListener('resize', function() {
         setupCards();
