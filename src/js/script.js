@@ -426,15 +426,49 @@ async function loadComponent(componentName, insertMethod, options) {
             // Get sidebar element and mark as loaded to prevent flash
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
+                // IMMEDIATELY set filter panel state before any initialization to prevent jitter
+                const isProjectPage = window.location.pathname.includes('/works/') && 
+                                      window.location.pathname.endsWith('.html');
+                const worksSection = sidebar.querySelector('.works-section');
+                if (worksSection) {
+                    if (isProjectPage) {
+                        // On project pages, force closed immediately
+                        worksSection.classList.add('filter-collapsed');
+                        worksSection.classList.remove('filter-expanded');
+                        localStorage.setItem('worksFilterCollapsed', 'true');
+                    } else {
+                        // On index page, check localStorage or default to collapsed on mobile
+                        const savedState = localStorage.getItem('worksFilterCollapsed');
+                        const isMobileOrTablet = window.innerWidth <= 1024;
+                        if (savedState === 'true' || (savedState === null && isMobileOrTablet)) {
+                            worksSection.classList.add('filter-collapsed');
+                        } else {
+                            worksSection.classList.remove('filter-collapsed');
+                        }
+                    }
+                }
+                
                 // Small delay to ensure DOM is ready, then show sidebar
                 setTimeout(() => {
                     try {
                         initializeFiltering();
                         initializeSorting();
                         initializeFilterToggle();
+                        
+                        // Double-check filter panel state on project pages after initialization
+                        if (isProjectPage && worksSection) {
+                            setTimeout(() => {
+                                worksSection.classList.add('filter-collapsed');
+                                worksSection.classList.remove('filter-expanded');
+                                localStorage.setItem('worksFilterCollapsed', 'true');
+                            }, 100);
+                        }
+                        
                         initializeLogoScrambling();
                         initializeDateDisplay();
                         initializeWeatherDisplay();
+                        // Fix sidebar paths (including About links)
+                        fixSidebarPaths(basePath);
                         // Initialize sidebar toggle (mobile)
                         const sidebarToggle = document.getElementById('sidebarToggle');
                         if (sidebarToggle) {
@@ -446,7 +480,9 @@ async function loadComponent(componentName, insertMethod, options) {
                         
                         // Calculate and set header height for mobile carousel
                         function updateMobileLayout() {
-                            if (window.innerWidth <= 768) {
+                            // Only apply mobile-specific styles on actual mobile (≤767px)
+                            // Tablets use desktop grid layout, so no dynamic sizing needed
+                            if (window.innerWidth <= 767) {
                                 const homeHeader = document.querySelector('.home-header');
                                 const featuredWorkCta = document.getElementById('featuredWorkCta');
                                 if (homeHeader) {
@@ -476,15 +512,26 @@ async function loadComponent(componentName, insertMethod, options) {
                                     });
                                     
                                     // Don't set padding-bottom here - it creates extra scrollable space
-                                    // The carousel setup function handles spacing
-                                    
-                                    // Trigger carousel recalculation if it exists
-                                    if (window.recalculateCarousel) {
-                                        setTimeout(function() {
-                                            window.recalculateCarousel();
-                                        }, 50);
-                                    }
                                 }
+                            } else {
+                                // On tablet/desktop, ensure mobile styles are cleared
+                                const featuredWork = document.querySelector('.featured-work');
+                                if (featuredWork) {
+                                    featuredWork.style.marginTop = '';
+                                    featuredWork.style.height = '';
+                                    featuredWork.style.maxHeight = '';
+                                }
+                                document.documentElement.style.removeProperty('--header-height');
+                                document.documentElement.style.removeProperty('--cta-height');
+                            }
+                            
+                            // The carousel setup function handles spacing
+                            
+                            // Trigger carousel recalculation if it exists
+                            if (window.recalculateCarousel) {
+                                setTimeout(function() {
+                                    window.recalculateCarousel();
+                                }, 50);
                             }
                         }
                         
@@ -608,31 +655,110 @@ function fixSidebarPaths(basePath) {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
     
+    // Calculate basePath if not provided
+    if (!basePath) {
+        basePath = '';
+        const scriptEl = document.querySelector('script[src*="script.js"]');
+        if (scriptEl && scriptEl.src) {
+            try {
+                // Browser resolves relative URLs to absolute, so scriptEl.src is always absolute
+                const scriptUrl = new URL(scriptEl.src);
+                basePath = scriptUrl.pathname.replace(/src\/js\/script\.js.*$/, '');
+                // Ensure basePath ends with / if not empty
+                if (basePath && !basePath.endsWith('/')) {
+                    basePath += '/';
+                }
+            } catch(e) {
+                // Fallback: determine from current path
+                const currentPath = window.location.pathname;
+                if (currentPath.includes('/works/')) {
+                    basePath = '../';
+                } else {
+                    basePath = '';
+                }
+            }
+        } else {
+            // Fallback: determine from current path
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/works/')) {
+                basePath = '../';
+            } else {
+                basePath = '';
+            }
+        }
+    }
+    
     // Fix logo link
     const logoLink = sidebar.querySelector('.logo-header a');
     if (logoLink) {
         logoLink.href = `${basePath}index.html`;
     }
     
-    // Fix works link
-    const worksLink = sidebar.querySelector('.nav-section-link');
-    if (worksLink) {
+    // Fix works link (first nav-section-link that's not disabled)
+    const worksLink = sidebar.querySelector('.works-section .nav-section-link');
+    if (worksLink && !worksLink.classList.contains('writings-disabled')) {
         worksLink.href = `${basePath}index.html`;
     }
     
-    // Fix project links
+    // Fix project links - fix ALL links, including those with #
     const projectLinks = sidebar.querySelectorAll('.works-list a');
     projectLinks.forEach(link => {
         const href = link.getAttribute('href');
-        if (href && !href.startsWith('http') && !href.startsWith('#')) {
-            // If it's a works/ path, keep it relative to base
-            if (href.startsWith('works/')) {
+        // Skip only if it's an external link or already absolute
+        if (href && !href.startsWith('http') && !href.startsWith('/')) {
+            // If href is #, we need to get the slug from the link text or data
+            if (href === '#') {
+                const slug = link.textContent.trim();
+                if (slug) {
+                    link.href = `${basePath}works/${slug}.html`;
+                }
+            } else if (href.startsWith('works/')) {
+                // If it's a works/ path, keep it relative to base
                 link.href = `${basePath}${href}`;
-            } else if (!href.startsWith('/')) {
+            } else {
+                // Other relative paths
                 link.href = `${basePath}${href}`;
             }
+            // Ensure link is clickable
+            link.style.pointerEvents = 'auto';
+            link.style.cursor = 'pointer';
         }
     });
+    
+    // Fix About page links (entire title is now a link)
+    const aboutLinks = sidebar.querySelectorAll('.nav-section-title-link[href*="about"]');
+    aboutLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && !href.startsWith('http') && !href.startsWith('#')) {
+            if (!href.startsWith('/')) {
+                // Fix path based on current location
+                const fixedHref = `${basePath}${href}`;
+                link.href = fixedHref;
+                console.log('Fixed About link:', href, '->', fixedHref, 'basePath:', basePath);
+            }
+            // Ensure link is clickable
+            link.style.pointerEvents = 'auto';
+            link.style.cursor = 'pointer';
+            // Remove any onclick handlers that might prevent navigation
+            link.onclick = null;
+        }
+    });
+    
+    // Fix works section title link
+    const worksTitleLink = sidebar.querySelector('.works-section .nav-section-title-link');
+    if (worksTitleLink) {
+        const href = worksTitleLink.getAttribute('href');
+        if (href && !href.startsWith('http') && !href.startsWith('#')) {
+            if (!href.startsWith('/')) {
+                worksTitleLink.href = `${basePath}${href}`;
+            }
+            worksTitleLink.style.pointerEvents = 'auto';
+            worksTitleLink.style.cursor = 'pointer';
+            worksTitleLink.onclick = null;
+        }
+    }
+    
+    console.log('Fixed sidebar paths with basePath:', basePath);
 }
 
 // Initialize Lucide icons - multiple initialization methods for iOS compatibility
@@ -674,21 +800,48 @@ function initializeSidebarToggle() {
     }
     sidebarToggle.dataset.initialized = 'true';
     
-    // Show toggle on mobile
-    if (window.innerWidth <= 768) {
+    // Show toggle only on mobile (not tablet)
+    if (window.innerWidth <= 767) {
         sidebarToggle.style.display = 'flex';
         // Initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+    } else {
+        sidebarToggle.style.display = 'none';
+        // Ensure sidebar is visible on tablet/desktop (not transformed off-screen)
+        if (sidebar) {
+            sidebar.style.transform = '';
+            sidebar.classList.remove('open');
+            document.body.classList.remove('sidebar-open');
+        }
     }
     
-    // Update toggle visibility on resize
+    // Update toggle visibility on resize - properly reset state
     function updateToggleDisplay() {
-        if (window.innerWidth <= 768) {
+        const isMobile = window.innerWidth <= 767;
+        if (isMobile) {
             sidebarToggle.style.display = 'flex';
+            // Ensure sidebar starts closed on mobile
+            if (sidebar && !sidebar.classList.contains('open')) {
+                sidebar.style.transform = 'translateX(-100%)';
+            }
         } else {
             sidebarToggle.style.display = 'none';
+            // Reset sidebar to normal tablet/desktop state (always visible)
+            // Clear all inline styles that might interfere
+            if (sidebar) {
+                sidebar.style.transform = '';
+                sidebar.style.width = '';
+                sidebar.style.maxWidth = '';
+                sidebar.style.position = '';
+                sidebar.style.top = '';
+                sidebar.style.left = '';
+                sidebar.style.zIndex = '';
+                sidebar.style.boxShadow = '';
+                sidebar.classList.remove('open');
+                document.body.classList.remove('sidebar-open');
+            }
         }
     }
     window.addEventListener('resize', updateToggleDisplay);
@@ -838,7 +991,7 @@ function initializeSidebarToggle() {
     const navLinks = sidebar.querySelectorAll('a, button:not(.filter-tag):not(.sort-button):not(.works-filter-toggle)');
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1024) {
                 closeSidebar();
             }
         });
@@ -850,6 +1003,11 @@ function initializeSidebarToggle() {
 function initializeDateDisplay() {
     const logoDate = document.getElementById('logoDate');
     if (!logoDate) return;
+    
+    // Skip if content already exists to prevent jitter on page navigation
+    if (logoDate.textContent && logoDate.textContent.trim().length > 0) {
+        return;
+    }
     
     const today = new Date();
     const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -874,6 +1032,15 @@ function initializeWeatherDisplay() {
     if (logoWeather.dataset.initialized === 'true') {
         return;
     }
+    
+    // Skip if content already exists to prevent jitter on page navigation
+    const placeholder = logoWeather.querySelector('.logo-weather-placeholder');
+    if (placeholder && placeholder.textContent && !placeholder.textContent.includes('00F')) {
+        // Content already loaded, mark as initialized but don't reload
+        logoWeather.dataset.initialized = 'true';
+        return;
+    }
+    
     logoWeather.dataset.initialized = 'true';
     
     // Reserve space immediately to prevent header expansion
@@ -977,11 +1144,6 @@ function initializeWeatherDisplay() {
                 const tempF = Math.round(data.current.temperature_2m);
                 const iconName = getIconName(weatherCode);
                 const isDay = isDaytimeInStLouis();
-                
-                // Debug: log weather info to console
-                console.log('Weather Code:', weatherCode);
-                console.log('Icon Name:', iconName);
-                console.log('Temperature:', tempF + 'F');
                 console.log('Is Daytime:', isDay);
                 
                 return {
@@ -1685,8 +1847,12 @@ function initializeFiltering() {
     function setActiveProject() {
         const currentPath = window.location.pathname;
         const currentFilename = currentPath.split('/').pop(); // Get just the filename
+        const worksList = document.querySelector('.works-list');
+        if (!worksList) return;
+        
         const sidebarLinks = document.querySelectorAll('.works-list li a');
         let activeLink = null;
+        let activeListItem = null;
         
         sidebarLinks.forEach(link => {
             link.classList.remove('active');
@@ -1701,6 +1867,7 @@ function initializeFiltering() {
             if (hrefFilename === currentFilename || currentPath.includes(hrefFilename)) {
                 link.classList.add('active');
                 activeLink = link;
+                activeListItem = link.closest('li');
                 // Also add class to wrapper for easier CSS targeting
                 const wrapper = link.closest('.project-link-wrapper');
                 if (wrapper) {
@@ -1716,17 +1883,27 @@ function initializeFiltering() {
             }
         });
         
-        // Auto-scroll active project into view
-        if (activeLink) {
+        // Move active project to first position and scroll to top calmly
+        if (activeListItem && worksList.firstChild !== activeListItem) {
+            // Remove active item from its current position
+            activeListItem.remove();
+            // Insert at the beginning
+            worksList.insertBefore(activeListItem, worksList.firstChild);
+            
+            // Calm scroll to top (smooth but not jarring)
             setTimeout(() => {
-                const listItem = activeLink.closest('li');
-                if (listItem) {
-                    listItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                        inline: 'nearest'
-                    });
-                }
+                worksList.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        } else if (activeListItem) {
+            // Already first, just scroll to top calmly
+            setTimeout(() => {
+                worksList.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             }, 100);
         }
     }
@@ -1752,11 +1929,11 @@ function initializeFilterToggle() {
     
     // Check localStorage for saved filter state
     const savedFilterState = localStorage.getItem('worksFilterCollapsed');
-    const isMobile = window.innerWidth <= 768;
+    const isMobileOrTablet = window.innerWidth <= 1024;
     
     // Helper function to update fixed sections (condense when filter panel is open)
     const updateFixedSections = () => {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 1024) {
             const worksSection = document.querySelector('.works-section');
             const fixedSections = document.querySelectorAll('.fixed-section');
             const sidebar = document.querySelector('.sidebar');
@@ -1781,7 +1958,29 @@ function initializeFilterToggle() {
         }
     };
     
-    if (savedFilterState !== null) {
+    // Check if we're on a project page - if so, keep filter panel closed
+    const isProjectPage = window.location.pathname.includes('/works/') && 
+                          window.location.pathname.endsWith('.html');
+    
+    console.log('initializeFilterToggle - isProjectPage:', isProjectPage, 'pathname:', window.location.pathname);
+    
+    if (isProjectPage) {
+        // On project pages, always keep filter panel closed
+        // Force it closed immediately and prevent any opening
+        worksSection.classList.add('filter-collapsed');
+        worksSection.classList.remove('filter-expanded'); // Remove any expanded class
+        // Clear any saved state that might open it
+        localStorage.setItem('worksFilterCollapsed', 'true');
+        console.log('Project page detected - keeping filter panel closed');
+        
+        // Also ensure it stays closed after a brief delay (in case something opens it)
+        setTimeout(() => {
+            if (!worksSection.classList.contains('filter-collapsed')) {
+                console.warn('Filter panel opened on project page - forcing closed');
+                worksSection.classList.add('filter-collapsed');
+            }
+        }, 300);
+    } else if (savedFilterState !== null) {
         // Use saved state
         if (savedFilterState === 'true') {
             worksSection.classList.add('filter-collapsed');
@@ -1800,10 +1999,21 @@ function initializeFilterToggle() {
     // Update fixed sections based on initial state
     updateFixedSections();
     
-        worksFilterToggle.addEventListener('click', (e) => {
+    // Add click handler for filter toggle
+    worksFilterToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+        
+        // On project pages, prevent opening the filter panel
+        const isProjectPage = window.location.pathname.includes('/works/') && 
+                              window.location.pathname.endsWith('.html');
+        
+        if (isProjectPage && worksSection.classList.contains('filter-collapsed')) {
+            // On project pages, don't allow opening - just return
+            return false;
+        }
+        
         worksSection.classList.toggle('filter-collapsed');
         
         // Save state to localStorage
@@ -1822,19 +2032,30 @@ function initializeFilterToggle() {
     });
     
     // Handle resize - expand on desktop, collapse on mobile
+    // But keep closed on project pages
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            if (window.innerWidth <= 768) {
-                // Mobile - keep current state or collapse if not set
+            // Check if we're still on a project page
+            const stillOnProjectPage = window.location.pathname.includes('/works/') && 
+                                      window.location.pathname.endsWith('.html');
+            
+            if (stillOnProjectPage) {
+                // On project pages, always keep closed
+                worksSection.classList.add('filter-collapsed');
+            } else if (window.innerWidth <= 1024) {
+                // Mobile/Tablet - keep current state or collapse if not set
                 if (!worksSection.classList.contains('filter-collapsed') && 
                     !worksSection.classList.contains('filter-expanded')) {
                     worksSection.classList.add('filter-collapsed');
                 }
             } else {
-                // Desktop - always expanded
-                worksSection.classList.remove('filter-collapsed');
+                // Desktop - always expanded (unless saved state says otherwise)
+                const savedState = localStorage.getItem('worksFilterCollapsed');
+                if (savedState !== 'true') {
+                    worksSection.classList.remove('filter-collapsed');
+                }
             }
             // Update fixed sections on resize
             updateFixedSections();
@@ -1934,7 +2155,7 @@ function initializeSorting() {
         loadProjectsData().then(data => {
             if (data && data.projects) {
                 // projectsData is a global variable from Project Data System
-                const worksProjects = data.projects.filter(p => p.category === 'works');
+                const worksProjects = data.projects.filter(p => !p.tags || !p.tags.includes('play'));
                 // Skip animation on initial load to prevent jarring rearrangement
                 applySort(currentSort, currentDirection, worksProjects, true);
                 updateSortButtons(currentSort);
@@ -2009,6 +2230,14 @@ function applySort(sortType, direction = 'asc', projectsArray = null, skipAnimat
     const worksList = document.querySelector('.works-list');
     if (!worksList) return;
     
+    // Don't sort on project pages - keep active project first
+    const isProjectPage = window.location.pathname.includes('/works/') && 
+                          window.location.pathname.endsWith('.html');
+    if (isProjectPage) {
+        console.log('Skipping sort on project page - keeping active project first');
+        return;
+    }
+    
     // Get all visible list items (respecting filters)
     const items = Array.from(worksList.querySelectorAll('li'));
     const visibleItems = items.filter(item => {
@@ -2023,7 +2252,7 @@ function applySort(sortType, direction = 'asc', projectsArray = null, skipAnimat
     if (!projectsToUse) {
         // Check if projectsData is loaded (it's an object with .projects array)
         if (typeof projectsData !== 'undefined' && projectsData && projectsData.projects) {
-            projectsToUse = projectsData.projects.filter(p => p.category === 'works');
+            projectsToUse = projectsData.projects.filter(p => !p.tags || !p.tags.includes('play'));
         }
     }
     
@@ -2111,7 +2340,350 @@ function applySort(sortType, direction = 'asc', projectsArray = null, skipAnimat
 }
 
 
-// Featured Work slow-motion calming glitch effect on hover
+// Featured Work Header slowGlitch effect - "FEATURED WORKS" to "SEE ALL WORKS" on hover
+document.addEventListener('DOMContentLoaded', function() {
+    const featuredWorkHeader = document.getElementById('featuredWorkHeader');
+    const featuredWorkHeaderText = document.getElementById('featuredWorkHeaderText');
+    const featuredWorkHeaderLink = document.querySelector('.featured-work-header-link');
+    
+    if (!featuredWorkHeader || !featuredWorkHeaderText || !featuredWorkHeaderLink) return;
+    
+    const originalText = 'FEATURED WORKS';
+    const targetText = 'SEE ALL WORKS';
+    const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // ASCII block characters for terminal aesthetic
+    const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+    // Special characters prioritized
+    const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
+    let currentText = originalText;
+    let scrambleInterval = null;
+    let isHovering = false;
+    let frameCount = 0;
+    
+    function getRandomChar() {
+        const rand = Math.random();
+        // 50% chance for blocks
+        if (rand < 0.5) {
+            return blockChars[Math.floor(Math.random() * blockChars.length)];
+        }
+        // 30% chance for special characters
+        else if (rand < 0.8) {
+            return specialChars[Math.floor(Math.random() * specialChars.length)];
+        }
+        // 20% chance for regular alphanumeric
+        return codeChars[Math.floor(Math.random() * codeChars.length)];
+    }
+    
+    function slowGlitch() {
+        if (!isHovering) return;
+        
+        const targetArray = targetText.split('');
+        const currentArray = currentText.split('');
+        
+        // Change 1-2 characters at a time for calming effect
+        let changed = 0;
+        const maxChanges = Math.random() < 0.4 ? 2 : 1; // 40% chance for 2 changes
+        
+        // Gradually reveal target text, character by character
+        for (let i = 0; i < Math.max(currentArray.length, targetArray.length) && changed < maxChanges; i++) {
+            if (i < targetArray.length) {
+                if (i >= currentArray.length || currentArray[i] !== targetArray[i]) {
+                    // 35% chance to change this character
+                    if (Math.random() < 0.35) {
+                        // Sometimes show target char, sometimes random char
+                        if (Math.random() < 0.7) {
+                            if (i >= currentArray.length) {
+                                currentArray.push(targetArray[i]);
+                            } else {
+                                currentArray[i] = targetArray[i];
+                            }
+                        } else {
+                            if (i >= currentArray.length) {
+                                currentArray.push(getRandomChar());
+                            } else {
+                                currentArray[i] = getRandomChar();
+                            }
+                        }
+                        changed++;
+                    }
+                }
+            }
+        }
+        
+        currentText = currentArray.join('');
+        featuredWorkHeaderText.textContent = currentText;
+        frameCount++;
+        
+        // After enough frames, ensure we show target text
+        if (frameCount > 20 && currentText !== targetText) {
+            featuredWorkHeaderText.textContent = targetText;
+            currentText = targetText;
+            if (scrambleInterval) {
+                clearInterval(scrambleInterval);
+                scrambleInterval = null;
+            }
+        }
+    }
+    
+    function startScrambling() {
+        isHovering = true;
+        frameCount = 0;
+        currentText = featuredWorkHeaderText.textContent;
+        
+        if (scrambleInterval) {
+            clearInterval(scrambleInterval);
+        }
+        
+        // Start slow glitch - 200ms interval (calming, deliberate)
+        slowGlitch();
+        scrambleInterval = setInterval(slowGlitch, 200);
+        
+        // Ensure we reach target after reasonable time
+        setTimeout(function() {
+            if (scrambleInterval) {
+                clearInterval(scrambleInterval);
+                scrambleInterval = null;
+            }
+            if (isHovering && featuredWorkHeaderText) {
+                featuredWorkHeaderText.textContent = targetText;
+                currentText = targetText;
+            }
+        }, 1500);
+    }
+    
+    function stopScrambling() {
+        isHovering = false;
+        if (scrambleInterval) {
+            clearInterval(scrambleInterval);
+            scrambleInterval = null;
+        }
+        
+        // Glitch back to original
+        function glitchBack() {
+            if (isHovering) return; // Don't glitch back if hovering again
+            
+            const originalArray = originalText.split('');
+            const currentArray = currentText.split('');
+            let changed = 0;
+            const maxChanges = 1;
+            
+            for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                if (currentArray[i] !== originalArray[i] && originalArray[i] !== undefined) {
+                    if (Math.random() < 0.3) {
+                        if (Math.random() < 0.7) {
+                            currentArray[i] = originalArray[i];
+                        } else {
+                            currentArray[i] = getRandomChar();
+                        }
+                        changed++;
+                    }
+                }
+            }
+            
+            // Handle case where current is longer than original
+            if (currentArray.length > originalArray.length && changed < maxChanges) {
+                if (Math.random() < 0.3) {
+                    currentArray.pop();
+                    changed++;
+                }
+            }
+            
+            currentText = currentArray.join('');
+            if (featuredWorkHeaderText) {
+                featuredWorkHeaderText.textContent = currentText;
+            }
+            
+            if (currentText === originalText) {
+                return;
+            }
+            
+            setTimeout(glitchBack, 200);
+        }
+        
+        // Small delay before glitching back
+        setTimeout(glitchBack, 300);
+    }
+    
+    // Add hover listeners
+    featuredWorkHeaderLink.addEventListener('mouseenter', startScrambling);
+    featuredWorkHeaderLink.addEventListener('mouseleave', stopScrambling);
+    featuredWorkHeaderLink.addEventListener('focus', startScrambling);
+    featuredWorkHeaderLink.addEventListener('blur', stopScrambling);
+});
+
+// Featured Project Title slowGlitch effect - Project Title to "READ MORE" on hover
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for projects to be generated
+    setTimeout(function() {
+        const titleTexts = document.querySelectorAll('.featured-project-title-text');
+        
+        titleTexts.forEach(function(titleSpan) {
+            const originalText = titleSpan.getAttribute('data-original-text') || titleSpan.textContent;
+            const targetText = titleSpan.getAttribute('data-target-text') || 'READ MORE';
+            const cardLink = titleSpan.closest('.featured-project-card-link');
+            
+            if (!cardLink) return;
+            
+            const codeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const blockChars = ['█', '▓', '▒', '░', '▄', '▀'];
+            const specialChars = ['%', '$', '@', '#', '&', '*', '+', '=', '-', '_', '|', '\\', '/', '<', '>', '?', '!', '~', '`'];
+            let currentText = originalText;
+            let scrambleInterval = null;
+            let isHovering = false;
+            let frameCount = 0;
+            
+            function getRandomChar() {
+                const rand = Math.random();
+                if (rand < 0.5) {
+                    return blockChars[Math.floor(Math.random() * blockChars.length)];
+                } else if (rand < 0.8) {
+                    return specialChars[Math.floor(Math.random() * specialChars.length)];
+                }
+                return codeChars[Math.floor(Math.random() * codeChars.length)];
+            }
+            
+            function slowGlitch() {
+                if (!isHovering) return;
+                
+                const targetArray = targetText.split('');
+                const currentArray = currentText.split('');
+                
+                let changed = 0;
+                const maxChanges = Math.random() < 0.4 ? 2 : 1;
+                
+                for (let i = 0; i < Math.max(currentArray.length, targetArray.length) && changed < maxChanges; i++) {
+                    if (i < targetArray.length) {
+                        if (i >= currentArray.length || currentArray[i] !== targetArray[i]) {
+                            if (Math.random() < 0.35) {
+                                if (Math.random() < 0.7) {
+                                    if (i >= currentArray.length) {
+                                        currentArray.push(targetArray[i]);
+                                    } else {
+                                        currentArray[i] = targetArray[i];
+                                    }
+                                } else {
+                                    if (i >= currentArray.length) {
+                                        currentArray.push(getRandomChar());
+                                    } else {
+                                        currentArray[i] = getRandomChar();
+                                    }
+                                }
+                                changed++;
+                            }
+                        }
+                    }
+                }
+                
+                currentText = currentArray.join('');
+                titleSpan.textContent = currentText;
+                frameCount++;
+                
+                if (frameCount > 20 && currentText !== targetText) {
+                    titleSpan.textContent = targetText;
+                    currentText = targetText;
+                    if (scrambleInterval) {
+                        clearInterval(scrambleInterval);
+                        scrambleInterval = null;
+                    }
+                }
+            }
+            
+            function startScrambling() {
+                isHovering = true;
+                frameCount = 0;
+                currentText = titleSpan.textContent;
+                
+                // Update aria-label for accessibility
+                if (cardLink) {
+                    cardLink.setAttribute('aria-label', 'View project - ' + targetText);
+                }
+                
+                if (scrambleInterval) {
+                    clearInterval(scrambleInterval);
+                }
+                
+                slowGlitch();
+                scrambleInterval = setInterval(slowGlitch, 200);
+                
+                setTimeout(function() {
+                    if (scrambleInterval) {
+                        clearInterval(scrambleInterval);
+                        scrambleInterval = null;
+                    }
+                    if (isHovering && titleSpan) {
+                        titleSpan.textContent = targetText;
+                        currentText = targetText;
+                    }
+                }, 1500);
+            }
+            
+            function stopScrambling() {
+                isHovering = false;
+                if (scrambleInterval) {
+                    clearInterval(scrambleInterval);
+                    scrambleInterval = null;
+                }
+                
+                // Restore aria-label for accessibility
+                if (cardLink) {
+                    const projectTitle = originalText;
+                    cardLink.setAttribute('aria-label', 'View ' + projectTitle);
+                }
+                
+                function glitchBack() {
+                    if (isHovering) return;
+                    
+                    const originalArray = originalText.split('');
+                    const currentArray = currentText.split('');
+                    let changed = 0;
+                    const maxChanges = 1;
+                    
+                    for (let i = 0; i < currentArray.length && changed < maxChanges; i++) {
+                        if (currentArray[i] !== originalArray[i] && originalArray[i] !== undefined) {
+                            if (Math.random() < 0.3) {
+                                if (Math.random() < 0.7) {
+                                    currentArray[i] = originalArray[i];
+                                } else {
+                                    currentArray[i] = getRandomChar();
+                                }
+                                changed++;
+                            }
+                        }
+                    }
+                    
+                    if (currentArray.length > originalArray.length && changed < maxChanges) {
+                        if (Math.random() < 0.3) {
+                            currentArray.pop();
+                            changed++;
+                        }
+                    }
+                    
+                    currentText = currentArray.join('');
+                    if (titleSpan) {
+                        titleSpan.textContent = currentText;
+                    }
+                    
+                    if (currentText === originalText) {
+                        return;
+                    }
+                    
+                    setTimeout(glitchBack, 200);
+                }
+                
+                setTimeout(glitchBack, 300);
+            }
+            
+            cardLink.addEventListener('mouseenter', startScrambling);
+            cardLink.addEventListener('mouseleave', stopScrambling);
+            cardLink.addEventListener('focus', startScrambling);
+            cardLink.addEventListener('blur', stopScrambling);
+        });
+    }, 500); // Wait for projects to be generated
+});
+
+// Writings section - simple disabled state (no glitch effect)
+
+// Featured Work CTA slow-motion calming glitch effect on hover (mobile only)
 document.addEventListener('DOMContentLoaded', function() {
     const featuredWorkCta = document.getElementById('featuredWorkCta');
     const featuredWorkSpan = document.getElementById('featuredWorkText');
@@ -2964,21 +3536,90 @@ function getProjectsByTags(tags) {
 }
 
 // Generate sidebar project list from projects.json
-function generateSidebarProjectList(projects) {
+let isGeneratingSidebar = false;
+function generateSidebarProjectList(projects, basePath) {
     const worksList = document.querySelector('.works-list');
     if (!worksList) return;
     
-    // Clear existing items
+    // Prevent multiple simultaneous calls
+    if (isGeneratingSidebar) {
+        console.warn('generateSidebarProjectList already in progress, skipping');
+        return;
+    }
+    isGeneratingSidebar = true;
+    
+    // Clear existing items completely - double check
+    const existingItems = worksList.querySelectorAll('li');
+    console.log('Clearing', existingItems.length, 'existing items from sidebar');
     worksList.innerHTML = '';
     
-    // Filter to only "works" category projects
-    const worksProjects = projects.filter(p => p.category === 'works');
+    // Verify it's cleared
+    if (worksList.children.length > 0) {
+        console.warn('Sidebar list not cleared! Still has', worksList.children.length, 'items');
+        // Force clear
+        while (worksList.firstChild) {
+            worksList.removeChild(worksList.firstChild);
+        }
+    }
+    
+    // Filter to only "works" projects (exclude projects with "play" tag)
+    let worksProjects = projects.filter(p => !p.tags || !p.tags.includes('play'));
+    
+    // Deduplicate by slug to prevent duplicates
+    const seenSlugs = new Set();
+    const duplicateCounts = {};
+    worksProjects = worksProjects.filter(p => {
+        if (seenSlugs.has(p.slug)) {
+            duplicateCounts[p.slug] = (duplicateCounts[p.slug] || 1) + 1;
+            console.warn('Duplicate project found in data:', p.slug, '- skipping');
+            return false;
+        }
+        seenSlugs.add(p.slug);
+        return true;
+    });
+    
+    if (Object.keys(duplicateCounts).length > 0) {
+        console.warn('Found duplicates in projects data:', duplicateCounts);
+    }
     
     // Store projects data for sorting
     projectsData = worksProjects;
     
-    // Generate list items
+    // Determine basePath if not provided
+    if (!basePath) {
+        basePath = '';
+        const scriptEl = document.querySelector('script[src*="script.js"]');
+        if (scriptEl && scriptEl.src) {
+            try {
+                const scriptUrl = new URL(scriptEl.src);
+                basePath = scriptUrl.pathname.replace(/src\/js\/script\.js.*$/, '');
+            } catch(e) {
+                basePath = '';
+            }
+        }
+    }
+    
+    // Check if we're on a project page and identify the active project
+    const currentPath = window.location.pathname;
+    const currentFilename = currentPath.split('/').pop();
+    let activeProject = null;
+    let otherProjects = [];
+    
+    // Separate active project from others
     worksProjects.forEach(project => {
+        const projectPath = `works/${project.slug}.html`;
+        if (currentPath.includes(projectPath) || currentPath.endsWith(`/${project.slug}.html`) || 
+            currentFilename === `${project.slug}.html`) {
+            activeProject = project;
+        } else {
+            otherProjects.push(project);
+        }
+    });
+    
+    // Generate list items - active project first, then others
+    const projectsToRender = activeProject ? [activeProject, ...otherProjects] : worksProjects;
+    
+    projectsToRender.forEach(project => {
         const li = document.createElement('li');
         li.setAttribute('data-tags', project.tags.join(' '));
         
@@ -2986,13 +3627,20 @@ function generateSidebarProjectList(projects) {
         linkWrapper.className = 'project-link-wrapper';
         
         const a = document.createElement('a');
-        a.href = `works/${project.slug}.html`;
+        // Ensure basePath ends with / if not empty
+        const finalBasePath = basePath && !basePath.endsWith('/') ? basePath + '/' : (basePath || '');
+        a.href = `${finalBasePath}works/${project.slug}.html`;
         a.textContent = project.slug;
+        // Ensure link is clickable and prevent any default behavior
+        a.style.pointerEvents = 'auto';
+        a.style.cursor = 'pointer';
+        // Remove any event listeners that might prevent navigation
+        a.onclick = null;
         
         // Check if this is the active page
-        const currentPath = window.location.pathname;
         const projectPath = `works/${project.slug}.html`;
-        if (currentPath.includes(projectPath) || currentPath.endsWith(`/${project.slug}.html`)) {
+        if (currentPath.includes(projectPath) || currentPath.endsWith(`/${project.slug}.html`) ||
+            currentFilename === `${project.slug}.html`) {
             a.classList.add('active');
             linkWrapper.classList.add('has-active-link'); // Add class for easier CSS targeting
         }
@@ -3012,15 +3660,97 @@ function generateSidebarProjectList(projects) {
         worksList.appendChild(li);
     });
     
-    // Apply current sort after generating list (skip animation on initial generation)
-    setTimeout(() => {
-        if (typeof applySort === 'function') {
-            applySort(currentSort, currentDirection, worksProjects, true);
-            updateSortButtons(currentSort);
-        }
-    }, 50);
+    // If we have an active project, scroll to top calmly after a brief delay
+    if (activeProject) {
+        setTimeout(() => {
+            worksList.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }, 150);
+    }
     
-    console.log('Sidebar project list generated:', worksProjects.length, 'projects');
+    // Verify no duplicates were created
+    const finalItems = worksList.querySelectorAll('li');
+    const finalSlugs = Array.from(finalItems).map(li => {
+        const link = li.querySelector('a');
+        return link ? link.textContent.trim() : '';
+    });
+    const duplicateSlugs = finalSlugs.filter((slug, index) => finalSlugs.indexOf(slug) !== index);
+    if (duplicateSlugs.length > 0) {
+        console.error('DUPLICATES FOUND IN SIDEBAR:', duplicateSlugs);
+    }
+    
+    console.log('Sidebar project list generated:', worksProjects.length, 'projects,', finalItems.length, 'items in DOM');
+    
+    // On project pages, don't sort - keep active project first
+    const isProjectPage = window.location.pathname.includes('/works/') && 
+                          window.location.pathname.endsWith('.html');
+    
+    if (!isProjectPage) {
+        // Apply current sort after generating list (skip animation on initial generation)
+        setTimeout(() => {
+            if (typeof applySort === 'function') {
+                applySort(currentSort, currentDirection, worksProjects, true);
+                updateSortButtons(currentSort);
+                
+                // Check again after sorting
+                const afterSortItems = worksList.querySelectorAll('li');
+                const afterSortSlugs = Array.from(afterSortItems).map(li => {
+                    const link = li.querySelector('a');
+                    return link ? link.textContent.trim() : '';
+                });
+                const afterSortDuplicates = afterSortSlugs.filter((slug, index) => afterSortSlugs.indexOf(slug) !== index);
+                if (afterSortDuplicates.length > 0) {
+                    console.error('DUPLICATES AFTER SORT:', afterSortDuplicates);
+                }
+            }
+        }, 50);
+    } else {
+        // On project pages, ensure active project stays first and scroll to top
+        setTimeout(() => {
+            const activeLink = worksList.querySelector('a.active');
+            if (activeLink) {
+                const activeListItem = activeLink.closest('li');
+                if (activeListItem && worksList.firstChild !== activeListItem) {
+                    activeListItem.remove();
+                    worksList.insertBefore(activeListItem, worksList.firstChild);
+                }
+                // Calm scroll to top
+                worksList.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+    }
+    
+    // Reset flag after sorting completes
+    setTimeout(() => {
+        // Final check for duplicates
+        const finalCheck = worksList.querySelectorAll('li');
+        const slugs = Array.from(finalCheck).map(li => {
+            const link = li.querySelector('a');
+            return link ? link.textContent.trim() : '';
+        });
+        const uniqueSlugs = new Set(slugs);
+        if (slugs.length !== uniqueSlugs.size) {
+            console.error('FINAL CHECK: Duplicates still present!', slugs.length, 'items but', uniqueSlugs.size, 'unique slugs');
+            // Remove duplicates by keeping only the first occurrence
+            const seen = new Set();
+            Array.from(finalCheck).forEach(li => {
+                const link = li.querySelector('a');
+                const slug = link ? link.textContent.trim() : '';
+                if (slug && seen.has(slug)) {
+                    console.warn('Removing duplicate:', slug);
+                    li.remove();
+                } else if (slug) {
+                    seen.add(slug);
+                }
+            });
+        }
+        isGeneratingSidebar = false;
+    }, 200);
 }
 
 // Render project page from data
@@ -3135,12 +3865,26 @@ function updateProjectMetadata(project) {
 }
 
 // Generate featured projects on homepage - new carousel structure
-function generateFeaturedProjects(projects) {
+function generateFeaturedProjects(projects, basePath) {
     const container = document.getElementById('featuredProjects');
     if (!container) return;
     
     // Use the projects parameter if provided, otherwise fall back to global projectsData
     const projectsToUse = projects || (projectsData && projectsData.projects) || [];
+    
+    // Determine basePath if not provided
+    if (!basePath) {
+        basePath = '';
+        const scriptEl = document.querySelector('script[src*="script.js"]');
+        if (scriptEl && scriptEl.src) {
+            try {
+                const scriptUrl = new URL(scriptEl.src);
+                basePath = scriptUrl.pathname.replace(/src\/js\/script\.js.*$/, '');
+            } catch(e) {
+                basePath = '';
+            }
+        }
+    }
     
     // Filter for specific 5 featured projects in order
     const featuredIds = ['sail_pattern_lab', 'driftpad', 'ascension_rx', 'sapling', 'weather_aura'];
@@ -3178,15 +3922,20 @@ function generateFeaturedProjects(projects) {
         const card = document.createElement('article');
         card.className = 'featured-project-card';
         card.setAttribute('data-index', index);
-        // Ensure white border is applied (except first card)
-        if (index > 0) {
+        // Ensure white border is applied on mobile only (except first card)
+        // Tablets use desktop grid layout with black borders, so no inline styles needed
+        if (index > 0 && window.innerWidth <= 767) {
             card.style.borderTop = '1px solid var(--color-white)';
+            card.style.borderRight = 'none';
+            card.style.borderBottom = 'none';
+            card.style.borderLeft = 'none';
         }
         
         const link = document.createElement('a');
-        link.href = 'works/' + project.slug + '.html';
+        link.href = basePath + 'works/' + project.slug + '.html';
         link.className = 'featured-project-card-link';
         link.setAttribute('aria-label', 'View ' + (project.title || project.slug));
+        link.setAttribute('aria-describedby', 'featured-project-' + index + '-desc');
         
         // Image container
         const imageContainer = document.createElement('div');
@@ -3213,17 +3962,28 @@ function generateFeaturedProjects(projects) {
         const blurbContainer = document.createElement('div');
         blurbContainer.className = 'featured-project-blurb';
         
-        // Title with arrow
+        // Title with arrow - add data attribute for slowGlitch
         const h3 = document.createElement('h3');
         h3.className = 'featured-project-title';
-        h3.innerHTML = (project.title || project.slug) + ' <i data-lucide="arrow-right" class="title-arrow"></i>';
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'featured-project-title-text';
+        titleSpan.textContent = project.title || project.slug;
+        titleSpan.setAttribute('data-original-text', project.title || project.slug);
+        titleSpan.setAttribute('data-target-text', 'READ MORE');
+        h3.appendChild(titleSpan);
+        const arrowIcon = document.createElement('i');
+        arrowIcon.setAttribute('data-lucide', 'arrow-right');
+        arrowIcon.className = 'title-arrow';
+        h3.appendChild(arrowIcon);
         blurbContainer.appendChild(h3);
         
-        // Description
-        if (project.description) {
+        // Blurb (use 'blurb' for featured cards, fallback to 'description' if blurb doesn't exist)
+        const blurbText = project.blurb || project.description;
+        if (blurbText) {
             const p = document.createElement('p');
             p.className = 'featured-project-description';
-            p.textContent = project.description;
+            p.id = 'featured-project-' + index + '-desc';
+            p.textContent = blurbText;
             blurbContainer.appendChild(p);
         }
         
@@ -3248,9 +4008,28 @@ function generateFeaturedProjects(projects) {
     console.log('Featured projects carousel generated:', featured.length);
 }
 
-// Initialize carousel scroll tracking for progress dots and card stack animation
-// SIMPLIFIED VERSION - cards in normal flow with CSS scroll-snap
-function initializeCarouselScroll(container, dotsContainer) {
+    // Ensure clean state on initial load - reset if not mobile
+    if (window.innerWidth > 767) {
+        // Wait for cards to be created, then reset
+        setTimeout(function() {
+            const cards = document.querySelectorAll('.featured-project-card');
+            if (cards.length > 0) {
+                cards.forEach(function(card) {
+                    card.style.height = '';
+                    card.style.minHeight = '';
+                    card.style.maxHeight = '';
+                    card.style.borderTop = '';
+                    card.style.borderRight = '';
+                    card.style.borderBottom = '';
+                    card.style.borderLeft = '';
+                });
+            }
+        }, 100);
+    }
+    
+    // Initialize carousel scroll tracking for progress dots and card stack animation
+    // SIMPLIFIED VERSION - cards in normal flow with CSS scroll-snap
+    function initializeCarouselScroll(container, dotsContainer) {
     const cardsContainer = container.querySelector('.featured-projects-cards');
     if (!cardsContainer || !dotsContainer) return;
     
@@ -3299,6 +4078,12 @@ function initializeCarouselScroll(container, dotsContainer) {
 
     function setupCards() {
         if (allCards.length === 0) return;
+        
+        // Only setup dynamic card sizing on mobile (≤767px)
+        // Tablets and desktop use CSS grid with fixed heights
+        if (window.innerWidth > 767) {
+            return;
+        }
 
         // Use visualViewport for accurate height on iOS Safari (excludes URL bar)
         const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -3324,7 +4109,9 @@ function initializeCarouselScroll(container, dotsContainer) {
 
         // Padding so the clone (last element) can scroll fully into view.
         // iOS Safari needs generous padding with sticky + scroll-snap.
-        cardsContainer.style.paddingBottom = cardHeight + 'px';
+        // Extra padding ensures last card can fully scroll into view (was getting stuck at ~70%)
+        // Need 2x card height to allow last card to fully scroll past sticky point
+        cardsContainer.style.paddingBottom = (cardHeight * 2) + 'px';
 
         return cardHeight;
     }
@@ -3516,10 +4303,54 @@ function initializeCarouselScroll(container, dotsContainer) {
         updateCardStates();
     }, 100);
 
-    // Update on resize
+    // Comprehensive reset function for desktop/tablet
+    function resetToDesktopLayout() {
+        // Reset all card inline styles
+        allCards.forEach(function(card) {
+            card.style.height = '';
+            card.style.minHeight = '';
+            card.style.maxHeight = '';
+            card.style.boxSizing = '';
+            card.style.borderTop = '';
+            card.style.borderRight = '';
+            card.style.borderBottom = '';
+            card.style.borderLeft = '';
+        });
+        
+        // Reset container styles
+        if (cardsContainer) {
+            cardsContainer.style.paddingBottom = '';
+        }
+        
+        // Reset featured work section styles (if they were set)
+        const featuredWork = document.querySelector('.featured-work');
+        if (featuredWork) {
+            featuredWork.style.marginTop = '';
+            featuredWork.style.height = '';
+            featuredWork.style.maxHeight = '';
+        }
+        
+        // Clear CSS variables that were set for mobile
+        document.documentElement.style.removeProperty('--header-height');
+        document.documentElement.style.removeProperty('--cta-height');
+    }
+    
+    // Update on resize with debouncing to prevent layout issues
+    let resizeTimeout;
     window.addEventListener('resize', function() {
-        setupCards();
-        updateCardStates();
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            const isMobile = window.innerWidth <= 767;
+            
+            if (isMobile) {
+                // Mobile: setup dynamic card sizing
+                setupCards();
+                updateCardStates();
+            } else {
+                // Tablet/Desktop: reset all mobile-specific styles immediately
+                resetToDesktopLayout();
+            }
+        }, 150);
     });
 }
 
@@ -3556,11 +4387,21 @@ async function initializeProjectSystem(basePath) {
         // On index page - generate sidebar list and featured projects
         // Wait for sidebar to load first
         setTimeout(() => {
-            generateSidebarProjectList(data.projects);
-            generateFeaturedProjects(data.projects);
+            generateSidebarProjectList(data.projects, basePath);
+            generateFeaturedProjects(data.projects, basePath);
+            // Fix sidebar paths after generating links (including About links)
+            // Use a small delay to ensure DOM is updated
+            setTimeout(() => {
+                fixSidebarPaths(basePath);
+            }, 50);
             // Re-initialize filtering and sorting after generating list
+            // But skip sorting on project pages to keep active project first
             initializeFiltering();
-            initializeSorting();
+            const isProjectPage = window.location.pathname.includes('/works/') && 
+                                  window.location.pathname.endsWith('.html');
+            if (!isProjectPage) {
+                initializeSorting();
+            }
         }, 200);
     }
 }

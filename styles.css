@@ -341,6 +341,26 @@ html::after{
     justify-content: space-between;
     gap: 0.5rem;
     line-height: 1.4; /* Better line-height for readability */
+    text-decoration: none; /* Remove underline for link titles */
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
+}
+
+/* Make nav section titles that are links feel like buttons */
+.nav-section-title-link{
+    cursor: pointer;
+    user-select: none;
+}
+
+.nav-section-title-link:hover{
+    background-color: rgba(26, 24, 22, 0.05);
+    transform: translateY(1px);
+}
+
+.nav-section-title-link:active{
+    background-color: rgba(26, 24, 22, 0.1);
+    transform: translateY(0);
+    box-shadow: inset 0 1px 3px rgba(26, 24, 22, 0.1);
 }
 
 .nav-section:last-child .nav-section-title{
@@ -354,17 +374,23 @@ html::after{
 .nav-section-link{
     color: inherit;
     text-decoration: none;
-    flex: 1;
+    flex: 0 1 auto;
     transition: transform 0.3s ease;
     display: inline-block;
     transform: translateX(0);
+    pointer-events: none; /* Don't interfere with parent link click */
 }
 
 .nav-section-link:hover{
     text-decoration: none;
 }
 
-/* Move label right when hovering on arrow icon */
+/* When parent title link is hovered, animate the text */
+.nav-section-title-link:hover .nav-section-link{
+    transform: translateX(2px);
+}
+
+/* Move label right when hovering on arrow icon (legacy support) */
 .nav-section-title:has(.nav-section-link-icon:hover) .nav-section-link,
 .nav-section-title:has(.nav-section-link-icon:focus) .nav-section-link{
     transform: translateX(4px) scale(1);
@@ -380,8 +406,19 @@ html::after{
     transition: opacity 0.2s var(--ease-weighted), transform 0.3s var(--ease-lift);
     flex-shrink: 0;
     margin-left: 0.5rem;
+    pointer-events: none; /* Don't interfere with parent link click */
 }
 
+/* When parent title is hovered, animate icon */
+.nav-section-title-link:hover .nav-section-link-icon{
+    opacity: 0.8;
+}
+
+.nav-section-title-link:hover .nav-section-link-icon .nav-section-icon{
+    transform: translateX(4px);
+}
+
+/* Legacy support for when icon was a link */
 .nav-section-link-icon:hover,
 .nav-section-link-icon:focus{
     opacity: 0.7;
@@ -424,6 +461,9 @@ html::after{
     flex-shrink: 0;
     margin-left: 0.5rem;
     gap: 0.375rem;
+    position: relative;
+    z-index: 10; /* Ensure button is above parent link */
+    pointer-events: auto; /* Ensure button is clickable */
 }
 
 .works-filter-toggle:hover,
@@ -1001,6 +1041,19 @@ html::after{
     box-sizing: border-box;
 }
 
+/* Desktop: Full width, reduced padding and lighter text */
+@media screen and (min-width: 769px) {
+    .content{
+        max-width: none; /* Remove max-width constraint - fill full width */
+        padding: 2rem 2.5rem; /* Reduced from 2rem 3rem */
+        width: 100%; /* Ensure it fills the grid column */
+    }
+    
+    .content p{
+        color: #4a4840; /* Lighter text color for softer feel */
+    }
+}
+
 .content h1,
 .content h2,
 .content h3,
@@ -1041,6 +1094,50 @@ html::after{
 
 .featured-work h2{
     margin-top: 0;
+}
+
+/* Featured Work Header - Desktop */
+.featured-work-header{
+    margin: 0 0 2rem 0;
+    padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 1.25rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+}
+
+.featured-work-header-link{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.3s var(--ease-weighted);
+}
+
+.featured-work-header-link:hover,
+.featured-work-header-link:focus{
+    opacity: 0.8;
+    outline: none;
+}
+
+.featured-work-header .header-arrow{
+    transition: transform 0.3s var(--ease-weighted);
+}
+
+.featured-work-header-link:hover .header-arrow,
+.featured-work-header-link:focus .header-arrow{
+    transform: translateX(4px);
+}
+
+/* Hide header on mobile */
+@media screen and (max-width: 768px) {
+    .featured-work-header{
+        display: none;
+    }
 }
 
 .section-header{
@@ -1113,6 +1210,14 @@ html::after{
     margin-bottom: 3.5rem;
 }
 
+/* Desktop: Tighter spacing */
+@media screen and (min-width: 769px) {
+    .home-header{
+        margin-bottom: 1rem; /* Reduced from 3.5rem */
+        margin-top: 1rem; /* Add breathing room at top */
+    }
+}
+
 /* Desktop: inherit from .content h1 (no overrides needed) */
 
 /* Mobile: custom styling */
@@ -1130,6 +1235,14 @@ html::after{
     margin-top: 0;
     line-height: 1.6;
     opacity: 0.85;
+}
+
+/* Desktop: Lighter, more subtle tagline */
+@media screen and (min-width: 769px) {
+    .home-tagline{
+        opacity: 0.75; /* More subtle */
+        font-size: 0.9375rem; /* Slightly smaller for hierarchy */
+    }
 }
 
 @media screen and (max-width: 768px) {
@@ -1166,9 +1279,49 @@ html::after{
     opacity: 0.85;
 }
 
+/* Wavy Line Separator - Desktop Only */
+.wavy-separator{
+    display: none; /* Hidden on mobile */
+    width: 100%;
+    height: 60px;
+    margin: 1rem 0;
+    overflow: hidden;
+    position: relative;
+}
+
+@media screen and (min-width: 769px) {
+    .wavy-separator{
+        display: block;
+    }
+    
+    .wavy-separator::before{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,30 Q300,10 600,30 T1200,30 L1200,60 L0,60 Z' fill='none' stroke='%23d3d3d3' stroke-width='1' opacity='0.4'/%3E%3Cpath d='M0,30 Q300,20 600,30 T1200,30' fill='none' stroke='%23a0a0a0' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E");
+        background-repeat: repeat-x;
+        background-size: 1200px 60px;
+        animation: waveMove 8s ease-in-out infinite;
+        opacity: 0.6;
+    }
+}
+
+@keyframes waveMove{
+    0%, 100%{
+        transform: translateX(0);
+    }
+    50%{
+        transform: translateX(-100px);
+    }
+}
+
 .featured-work{
     margin-bottom: 3rem;
 }
+
 
 /* Mobile: Black background for featured work section */
 @media screen and (max-width: 768px) {
@@ -1176,13 +1329,11 @@ html::after{
         background-color: var(--color-black);
         margin: 0;
         padding: 0;
-        width: 100vw;
+        width: 100%;
         margin-left: 0;
         margin-right: 0;
-        height: calc(100vh - var(--header-height, 9rem));
-        height: calc(100dvh - var(--header-height, 9rem));
-        max-height: calc(100vh - var(--header-height, 9rem));
-        max-height: calc(100dvh - var(--header-height, 9rem));
+        flex: 1; /* Fill remaining space in flex container */
+        min-height: 0; /* Critical for flex children to shrink */
         display: flex;
         flex-direction: column;
         position: relative;
@@ -1214,7 +1365,7 @@ html::after{
         border-top: 1px solid rgba(26, 24, 22, 0.1);
         transition: background 0.3s var(--ease-weighted), border-color 0.3s var(--ease-weighted);
         flex-shrink: 0;
-        width: 100vw;
+        width: 100%;
         box-sizing: border-box;
         /* Calculate exact height for card sizing */
         height: auto;
@@ -1260,6 +1411,8 @@ html::after{
     .featured-projects-carousel{
         overflow: hidden;
         clip-path: inset(0);
+        min-height: 0; /* Critical for flex children to shrink */
+        flex: 1 1 0; /* Grow and shrink, base size 0 */
     }
 }
 
@@ -1280,75 +1433,38 @@ html::after{
     display: none; /* Chrome/Safari */
 }
 
-/* Desktop: Horizontal strip - all 5 visible with glitch effect */
+/* Desktop: Mosaic grid layout - 2 top, 3 bottom */
 @media screen and (min-width: 769px) {
     .featured-projects-cards{
-        scroll-snap-type: x mandatory;
-        padding-bottom: 1rem;
+        display: grid;
+        grid-template-columns: repeat(10, 1fr); /* 10 columns for precise control */
+        gap: 1.25rem; /* Slightly more breathing room */
+        padding: 0.5rem; /* Padding to prevent clipping on hover lift */
+        overflow: visible; /* No scrolling */
     }
     
-    /* Featured Work CTA styling for desktop - subtle hierarchy */
+    /* First 2 cards span 5 columns each (top row: 5 + 5 = 10) */
+    .featured-project-card:nth-child(1),
+    .featured-project-card:nth-child(2){
+        grid-column: span 5;
+    }
+    
+    /* Next 3 cards span bottom row - balanced layout: 3, 4, 3 */
+    .featured-project-card:nth-child(3){
+        grid-column: span 3;
+    }
+    
+    .featured-project-card:nth-child(4){
+        grid-column: span 4; /* Center card gets more space */
+    }
+    
+    .featured-project-card:nth-child(5){
+        grid-column: span 3; /* Last card balances the row */
+    }
+    
+    /* Hide CTA on desktop */
     .featured-work-cta{
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem 0;
-        background: transparent;
-        color: var(--color-text);
-        text-decoration: none;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
-        margin-top: 2.5rem;
-        transition: opacity 0.3s var(--ease-weighted), border-color 0.3s var(--ease-weighted);
-        opacity: 0.75;
-    }
-    
-    .featured-work-cta:hover,
-    .featured-work-cta:focus{
-        opacity: 1;
-        border-top-color: rgba(0, 0, 0, 0.2);
-        outline: none;
-    }
-    
-    .featured-work-cta .section-icon{
-        width: 1rem;
-        height: 1rem;
-        opacity: 0.7;
-        transition: transform 0.3s var(--ease-weighted), opacity 0.3s var(--ease-weighted);
-    }
-    
-    .featured-work-cta:hover .section-icon,
-    .featured-work-cta:focus .section-icon{
-        transform: translateX(4px);
-        opacity: 1;
-    }
-    
-    /* Fade gradients on edges to indicate scrollability */
-    .featured-projects-cards::before,
-    .featured-projects-cards::after{
-        content: '';
-        position: sticky;
-        top: 0;
-        width: 4rem;
-        height: 100%;
-        z-index: 2;
-        pointer-events: none;
-        flex-shrink: 0;
-    }
-    
-    .featured-projects-cards::before{
-        left: 0;
-        background: linear-gradient(to right, var(--color-white), transparent);
-    }
-    
-    .featured-projects-cards::after{
-        right: 0;
-        background: linear-gradient(to left, var(--color-white), transparent);
+        display: none;
     }
 }
 
@@ -1365,8 +1481,9 @@ html::after{
         scroll-margin: 0;
         flex: 1;
         height: 100%;
+        min-height: 0; /* Critical for flex children to shrink */
         background-color: var(--color-black);
-        width: 100vw;
+        width: 100%;
         margin: 0;
         padding: 0;
         padding-bottom: 0; /* Set dynamically in JS */
@@ -1386,34 +1503,128 @@ html::after{
     scroll-margin: 0;
 }
 
-/* Desktop: Horizontal cards - larger size */
+/* Desktop: Mosaic grid cards */
 @media screen and (min-width: 769px) {
     .featured-project-card{
-        width: calc(20vw - 1.6rem); /* 5 cards with gap */
-        min-width: 280px;
-        max-width: 400px;
-        height: calc(100vh - 8rem); /* Larger cards, account for header */
+        width: 100%; /* Fill grid cell */
+        height: 320px; /* Consistent fixed height for alignment */
+        min-height: 320px; /* Ensure minimum height */
         position: relative;
-        overflow: hidden;
+        overflow: visible; /* Changed from hidden to allow title overflow */
+        border: 1px solid var(--color-black); /* Brutalist border - all sides */
+        background: var(--color-white);
+        transition: transform 0.4s var(--ease-lift), box-shadow 0.4s var(--ease-lift);
     }
     
-    .featured-project-card-link{
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-        overflow: hidden;
+    /* All cards have black borders on all sides - thinner for subtlety (desktop only) */
+    .featured-project-card{
+        border-top: 1px solid var(--color-black);
+        border-right: 1px solid var(--color-black);
+        border-bottom: 1px solid var(--color-black);
+        border-left: 1px solid var(--color-black);
+    }
+    
+    /* Ensure cards 2-5 have visible top borders on desktop */
+    .featured-project-card:nth-child(2),
+    .featured-project-card:nth-child(3),
+    .featured-project-card:nth-child(4),
+    .featured-project-card:nth-child(5){
+        border-top: 1px solid var(--color-black);
+    }
+    
+    .featured-project-card:hover{
+        transform: translateY(-6px); /* Lift on hover - consistent with site interactions */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
+    }
+    
+    /* Image brightness/contrast change on hover for depth */
+    .featured-project-card:hover .featured-project-image-container img{
+        filter: brightness(1.05) contrast(1.05); /* Subtle enhancement */
+        transition: filter 0.4s var(--ease-lift);
     }
 }
 
 /* Mobile: Vertical full-height cards - Using sticky for natural stacking */
-@media screen and (max-width: 768px) {
+/* Tablet breakpoint (768px-1024px) - Use desktop grid layout */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+    /* Use grid layout like desktop, but with adjusted spacing */
+    .featured-projects-cards{
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 1rem; /* Slightly tighter gap than desktop */
+        padding: 0.5rem;
+        overflow: visible;
+    }
+    
+    /* Same grid layout as desktop: 2 top, 3 bottom */
+    .featured-project-card:nth-child(1),
+    .featured-project-card:nth-child(2){
+        grid-column: span 5;
+    }
+    
+    .featured-project-card:nth-child(3){
+        grid-column: span 3;
+    }
+    
+    .featured-project-card:nth-child(4){
+        grid-column: span 4;
+    }
+    
+    .featured-project-card:nth-child(5){
+        grid-column: span 3;
+    }
+    
+    /* Cards with fixed height, slightly smaller than desktop */
     .featured-project-card{
-        width: 100vw; /* Full viewport width - no margins */
+        width: 100%;
+        height: 280px; /* Slightly smaller than desktop 320px for tablet */
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--color-black);
+        background: var(--color-white);
+        transition: transform 0.4s var(--ease-lift), box-shadow 0.4s var(--ease-lift);
+        /* Reset mobile-specific styles */
+        min-height: auto;
+        max-height: none;
+        box-shadow: none;
+        transform: none;
+    }
+    
+    /* All cards have black borders on all sides */
+    .featured-project-card{
+        border-top: 1px solid var(--color-black);
+        border-right: 1px solid var(--color-black);
+        border-bottom: 1px solid var(--color-black);
+        border-left: 1px solid var(--color-black);
+    }
+    
+    .featured-project-card:nth-child(2),
+    .featured-project-card:nth-child(3),
+    .featured-project-card:nth-child(4),
+    .featured-project-card:nth-child(5){
+        border-top: 1px solid var(--color-black);
+    }
+    
+    /* Hover effects like desktop */
+    .featured-project-card:hover{
+        transform: translateY(-6px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .featured-project-card:hover .featured-project-image-container img{
+        filter: brightness(1.05) contrast(1.05);
+        transition: filter 0.4s var(--ease-lift);
+    }
+    
+    /* Hide CTA on tablet (like desktop) */
+    .featured-work-cta{
+        display: none;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .featured-project-card{
+        width: 100%; /* Full container width - prevents horizontal overflow */
         height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
         height: calc(100dvh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
         min-height: calc(100vh - var(--header-height, 9rem) - var(--cta-height, 4.5rem));
@@ -1435,11 +1646,36 @@ html::after{
         /* Elevation shadow for depth - creates tactile card feel */
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
         transform: none;
+        /* Reset borders for mobile - no borders on mobile cards */
+        border: none;
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
+        border-left: none;
     }
     
-    /* White top border for all cards except first */
+    /* White top border for all cards except first - mobile only */
     .featured-project-card:not(:first-child) {
         border-top: 1px solid var(--color-white);
+        border-right: none;
+        border-bottom: none;
+        border-left: none;
+    }
+    
+    /* Override desktop border styles on mobile - ensure no black borders */
+    .featured-project-card:nth-child(2),
+    .featured-project-card:nth-child(3),
+    .featured-project-card:nth-child(4),
+    .featured-project-card:nth-child(5){
+        border-top: 1px solid var(--color-white) !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-left: none !important;
+    }
+    
+    /* Ensure first card has no borders on mobile */
+    .featured-project-card:first-child {
+        border: none !important;
     }
     
     /* Active/visible card gets stronger shadow and full scale */
@@ -1511,7 +1747,7 @@ html::after{
         text-decoration: none;
         color: inherit;
         position: relative;
-        overflow: hidden;
+        overflow: visible; /* Changed from hidden to allow title overflow */
         margin: 0;
         padding: 0;
     }
@@ -1527,6 +1763,7 @@ html::after{
         bottom: 0;
         width: 100%;
         height: 100%;
+        max-height: 100%; /* Match card height - constrained by card's 320px */
         overflow: hidden;
     }
     
@@ -1538,10 +1775,12 @@ html::after{
         height: 100%;
         min-width: 100%;
         min-height: 100%;
+        max-height: 100%; /* Match card height - constrained by card's 320px */
         object-fit: cover;
         object-position: center;
         display: block;
-        transition: transform 0.4s var(--ease-weighted);
+        transition: transform 0.4s var(--ease-weighted), filter 0.4s var(--ease-lift);
+        filter: brightness(1) contrast(1); /* Base state */
     }
 }
 
@@ -1557,6 +1796,14 @@ html::after{
     z-index: 1;
 }
 
+/* Desktop: Stronger gradient overlay for better text legibility */
+@media screen and (min-width: 769px) {
+    .featured-project-gradient{
+        background: linear-gradient(to top, rgba(26, 24, 22, 0.95) 0%, rgba(26, 24, 22, 0.9) 20%, rgba(26, 24, 22, 0.85) 40%, rgba(26, 24, 22, 0.7) 60%, rgba(26, 24, 22, 0.5) 80%, transparent 100%);
+        height: 70%; /* Extend gradient coverage slightly */
+    }
+}
+
 /* Blurb Container (overlay on image) */
 .featured-project-blurb{
     position: absolute;
@@ -1569,17 +1816,31 @@ html::after{
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    transition: transform 0.3s var(--ease-weighted);
+    transition: transform 0.4s var(--ease-lift), box-shadow 0.4s var(--ease-lift);
 }
 
-/* Desktop: Blurb lifts on hover */
+/* Desktop: Tighter spacing to match mobile */
+@media screen and (min-width: 769px) {
+    .featured-project-blurb{
+        padding: 1.75rem 1.5rem 1.5rem 1.5rem; /* Match mobile padding */
+        gap: 0.5rem; /* Tighter gap, closer to mobile's 0.375rem */
+    }
+    
+    /* Add text shadow for better legibility on light images */
+    .featured-project-title,
+    .featured-project-description{
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Desktop: Blurb lifts on hover - more subtle */
 @media screen and (min-width: 769px) {
     .featured-project-card-link:hover .featured-project-blurb{
-        transform: translateY(-8px);
+        transform: translateY(-6px); /* Reduced from -8px for subtlety */
     }
     
     .featured-project-card-link:hover .featured-project-image-container img{
-        transform: scale(1.05);
+        transform: scale(1.03); /* Reduced from 1.05 for subtlety */
     }
 }
 
@@ -1607,6 +1868,35 @@ html::after{
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.featured-project-title-text{
+    display: inline-block;
+    overflow: visible; /* Prevent text clipping */
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+/* Desktop: Ensure titles don't get cut off */
+@media screen and (min-width: 769px) {
+    .featured-project-blurb{
+        overflow: visible; /* Allow content to be visible even if it extends */
+        min-height: auto; /* Don't constrain height */
+    }
+    
+    .featured-project-title{
+        max-width: 100%; /* Allow full width */
+        overflow: visible;
+        flex-wrap: wrap; /* Allow title to wrap to multiple lines */
+        width: 100%; /* Take full width of container */
+    }
+    
+    .featured-project-title-text{
+        overflow: visible;
+        text-overflow: clip; /* Don't truncate with ellipsis */
+        white-space: normal; /* Allow wrapping if needed */
+        word-break: break-word; /* Break long words if necessary */
+        max-width: 100%; /* Ensure it doesn't exceed container */
+    }
 }
 
 .featured-project-title .title-arrow{
@@ -1639,6 +1929,18 @@ html::after{
     line-height: 1.6;
     opacity: 0.9;
     font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--color-white); /* Ensure white text */
+}
+
+/* Desktop: All blurbs white */
+@media screen and (min-width: 769px) {
+    .featured-project-description{
+        color: var(--color-white) !important;
+    }
+    
+    .featured-project-title{
+        color: var(--color-white) !important;
+    }
 }
 
 @media screen and (max-width: 768px) {
@@ -1653,6 +1955,13 @@ html::after{
         overflow: hidden;
         margin-bottom: 0; /* No extra margin, aligns with dots */
         margin-top: 0.375rem; /* Tighter spacing from title */
+        color: var(--color-white); /* Ensure white text */
+    }
+    
+    /* First card blurb white on mobile */
+    .featured-project-card:first-child .featured-project-description,
+    .featured-project-card:first-child .featured-project-title{
+        color: var(--color-white) !important;
     }
 }
 
@@ -1888,10 +2197,73 @@ html::after{
     line-height: 1.7;
 }
 
+/* About Pages (About Me, About Site) */
+.about-header{
+    margin-bottom: 2.5rem;
+    max-width: 75ch;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.about-title{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: var(--font-size-h1);
+    font-weight: normal;
+    margin-bottom: 1rem;
+    letter-spacing: var(--letter-spacing-h1);
+}
+
+.about-content{
+    max-width: 75ch;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.about-content p{
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    color: var(--color-text);
+}
+
+.about-content h2{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 1.5rem;
+    font-weight: normal;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Writings Coming Soon State */
+.writings-disabled{
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.coming-soon-text{
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    opacity: 0.8;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.nav-section-title:has(.writings-disabled){
+    cursor: not-allowed;
+}
+
+.nav-section-title:has(.writings-disabled):hover .writings-disabled{
+    opacity: 0.8;
+}
+
 /* GET IN TOUCH Section - subtle tertiary hierarchy */
 .get-in-touch{
     margin-top: 2.5rem;
     padding: 0;
+    display: none; /* Hide GET IN TOUCH section */
 }
 
 .get-in-touch-link{
@@ -1953,8 +2325,17 @@ html::after{
    Project Page Styles
    ============================================ */
 
+/* Project pages - ensure light background */
+body:has(.project-header),
+body .content:has(.project-header){
+    background-color: var(--color-white) !important;
+}
+
 .project-header{
     margin-bottom: 2.5rem;
+    max-width: 75ch; /* Match content width */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .project-title,
@@ -2093,6 +2474,9 @@ html::after{
 
 .project-description{
     margin-bottom: 2.5rem;
+    max-width: 75ch; /* Match content width */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .project-description p{
@@ -2107,6 +2491,83 @@ html::after{
     margin-bottom: 2.5rem;
     padding-top: 2.5rem;
     border-top: 1px solid rgba(0, 0, 0, 0.15);
+    max-width: 75ch; /* Optimal reading width */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Hero image at top (after header, before description) */
+.project-hero-image{
+    width: 100%;
+    max-width: 75ch; /* Match content width */
+    max-width: min(75ch, 1200px); /* Cap at 1200px for super wide screens */
+    margin: 2.5rem auto;
+    margin-top: 0;
+    display: block;
+}
+
+.project-hero-image img{
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    border: 1px solid var(--color-black) !important; /* Border for hero image - force with !important */
+    box-sizing: border-box; /* Include border in width calculation */
+}
+
+/* Inline images within project content */
+.project-content img{
+    width: 100%;
+    max-width: 75ch; /* Constrain to content width */
+    max-width: min(75ch, 1200px); /* Cap at 1200px for super wide screens */
+    height: auto;
+    margin: 2rem auto; /* Center with auto margins */
+    display: block;
+    border: 1px solid var(--color-black) !important; /* Border for all images - force with !important */
+    box-sizing: border-box; /* Include border in width calculation */
+}
+
+/* Project content headings */
+.project-content h2{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 1.5rem;
+    font-weight: normal;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.project-content h3{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 1.25rem;
+    font-weight: normal;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.03em;
+}
+
+.project-content p{
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    color: var(--color-text);
+}
+
+.project-content ul,
+.project-content ol{
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    color: var(--color-text);
+}
+
+.project-content li{
+    margin-bottom: 0.5rem;
 }
 
 .project-links{
@@ -2115,6 +2576,9 @@ html::after{
     margin-top: 3rem;
     padding-top: 2rem;
     border-top: 1px solid var(--color-black);
+    max-width: 75ch; /* Match content width */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .project-link{
@@ -2245,7 +2709,44 @@ body.sidebar-open .sidebar-toggle-icon-close{
     display: none;
 }
 
-@media screen and (max-width: 768px) {
+/* Tablet breakpoint (768px-1024px) - Use desktop layout with sidebar visible */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+    /* Keep desktop grid layout - sidebar + content side-by-side */
+    body{
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /* Sidebar visible and sticky like desktop */
+    .sidebar{
+        position: sticky;
+        top: 0;
+        transform: translateX(0); /* Always visible */
+        border-right: 1px solid var(--color-black);
+        /* Reset mobile-specific styles */
+        width: auto;
+        max-width: none;
+        box-shadow: none;
+        z-index: 1;
+    }
+    
+    /* Hide toggle button on tablet (sidebar always visible) */
+    .sidebar-toggle{
+        display: none !important;
+    }
+    
+    /* Content area like desktop */
+    .content{
+        max-width: none;
+        padding: 2rem 2rem; /* Slightly tighter than desktop */
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 767px) {
     
     
     body{
@@ -2485,6 +2986,63 @@ body.sidebar-open .sidebar-toggle-icon-close{
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
+    }
+    
+    /* Project pages on mobile - light background and scrollable */
+    .content:has(.project-header),
+    .content:has(.about-header){
+        background-color: var(--color-white) !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: 100vh;
+        height: 100dvh;
+    }
+    
+    /* Project page mobile styles */
+    .project-header,
+    .project-description,
+    .project-content,
+    .project-links{
+        max-width: 100%;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    /* About pages mobile styles */
+    .about-header,
+    .about-content{
+        max-width: 100%;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .about-content h2{
+        margin-top: 2rem;
+        font-size: 1.25rem;
+    }
+    
+    .project-content{
+        padding-top: 2rem;
+    }
+    
+    .project-content img{
+        margin: 1.5rem 0;
+        border: 1px solid var(--color-black) !important; /* Ensure border on mobile too */
+        max-width: 100%; /* Full width on mobile */
+    }
+    
+    .project-hero-image img{
+        border: 1px solid var(--color-black) !important; /* Ensure border on mobile too */
+        max-width: 100%; /* Full width on mobile */
+    }
+    
+    .project-tags .tag{
+        min-height: 44px; /* Touch-friendly on mobile */
+        padding: 0.5rem 0.75rem;
     }
     
     /* Ensure all content children respect container width */

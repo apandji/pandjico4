@@ -15,17 +15,17 @@
         </div>
     </header>
     <nav>
-        <div class="nav-section works-section">
-            <h2 class="nav-section-title">
-                <a href="index.html" class="nav-section-link">works</a>
-                <button class="works-filter-toggle" id="worksFilterToggle" aria-label="Toggle filters">
+        <div class="nav-section works-section filter-collapsed">
+            <a href="index.html" class="nav-section-title nav-section-title-link" id="worksSectionTitle">
+                <span class="nav-section-link">works</span>
+                <button class="works-filter-toggle" id="worksFilterToggle" aria-label="Toggle filters" onclick="event.stopPropagation();">
                     <i data-lucide="filter" class="works-filter-icon"></i>
                     <span class="filter-badge" id="filterBadge" aria-hidden="true"></span>
                 </button>
-                <a href="index.html" class="nav-section-link-icon" aria-label="See all works">
+                <span class="nav-section-link-icon" aria-label="See all works">
                     <i data-lucide="chevron-right" class="nav-section-icon"></i>
-                </a>
-            </h2>
+                </span>
+            </a>
             <div class="filter-controls" id="filterControls">
                 <div class="filter-content" id="filterContent">
                     <div class="sort-buttons">
@@ -71,27 +71,24 @@
         </div>
         <div class="nav-section fixed-section">
             <h2 class="nav-section-title">
-                <span class="nav-section-link">writings</span>
-                <a href="#" class="nav-section-link-icon" aria-label="See writings">
-                    <i data-lucide="chevron-right" class="nav-section-icon"></i>
-                </a>
+                <span class="nav-section-link writings-disabled">writings <span class="coming-soon-text">(coming soon!)</span></span>
             </h2>
         </div>
         <div class="nav-section fixed-section">
-            <h2 class="nav-section-title">
+            <a href="about-me.html" class="nav-section-title nav-section-title-link">
                 <span class="nav-section-link">about me</span>
-                <a href="#" class="nav-section-link-icon" aria-label="About me">
+                <span class="nav-section-link-icon" aria-label="About me">
                     <i data-lucide="chevron-right" class="nav-section-icon"></i>
-                </a>
-            </h2>
+                </span>
+            </a>
         </div>
         <div class="nav-section fixed-section">
-            <h2 class="nav-section-title">
+            <a href="about-site.html" class="nav-section-title nav-section-title-link">
                 <span class="nav-section-link">about site</span>
-                <a href="#" class="nav-section-link-icon" aria-label="About site">
+                <span class="nav-section-link-icon" aria-label="About site">
                     <i data-lucide="chevron-right" class="nav-section-icon"></i>
-                </a>
-            </h2>
+                </span>
+            </a>
         </div>
         </nav>
     </aside>

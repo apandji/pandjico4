@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1001">
+    <link rel="stylesheet" href="styles.css?v=1012">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         // Immediate error detection for iOS
@@ -117,20 +117,22 @@
             <p class="home-tagline">I'm a designer and technologist creating interactive experiences rooted in tactility, grounding, and wellbeing.</p>
         </header>
 
+        <!-- Wavy line separator (desktop only) -->
+        <div class="wavy-separator" aria-hidden="true"></div>
+
         <section class="featured-work">
+            <h2 class="featured-work-header" id="featuredWorkHeader">
+                <a href="works.html" class="featured-work-header-link">
+                    <span id="featuredWorkHeaderText">FEATURED WORKS</span>
+                    <span class="header-arrow">></span>
+                </a>
+            </h2>
             <div class="featured-projects" id="featuredProjects">
                 <!-- Featured projects will be generated from projects.json -->
             </div>
             <a href="works.html" class="featured-work-cta" id="featuredWorkCta">
                 <span id="featuredWorkText">SEE ALL WORK</span>
                 <i data-lucide="chevron-right" class="section-icon"></i>
-            </a>
-        </section>
-
-        <section class="get-in-touch">
-            <a href="mailto:hello@pandjico.com" class="get-in-touch-link">
-                <span>GET IN TOUCH</span>
-                <i data-lucide="arrow-right" class="section-icon"></i>
             </a>
         </section>
 
