@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1012">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css?v=1013">
+    <script src="https://unpkg.com/lucide@0.563.0"></script>
     <script>
         // Immediate error detection for iOS
         window.addEventListener('error', function(e) {
@@ -26,7 +26,6 @@
         (function() {
             'use strict';
             try {
-                console.log('Inline script test - JavaScript is enabled');
                 document.documentElement.classList.add('js-enabled');
             } catch (e) {
                 console.error('Initialization error:', e);
@@ -54,15 +53,13 @@
                             }));
                         });
                     }
-                }).then(function() {
-                    console.log('Service workers unregistered and caches cleared');
                 }).catch(function(error) {
                     console.error('Error removing service workers:', error);
                 });
             }
         })();
     </script>
-    <script src="src/js/script.js?v=1004" defer></script>
+    <script src="src/js/script.js?v=1005" defer></script>
     <script>
         // Verify script loaded and show failure indicator if needed
         (function() {
@@ -81,8 +78,6 @@
                             indicator.style.display = 'block';
                             document.body.insertBefore(indicator, document.body.firstChild);
                         }
-                    } else {
-                        console.log('Main script loaded successfully');
                     }
                 } catch (e) {
                     console.error('Verification error:', e);
@@ -113,7 +108,7 @@
 
     <main class="content">
         <header class="home-header">
-            <h1>Hi, I'm <span id="pandjiName" class="pandji-name">Pandji</span>.</h1>
+            <h1>Hi, I'm <span id="pandjiName" class="pandji-name" role="button" tabindex="0" aria-label="Toggle name between Pandji and Andrew">Pandji</span>.</h1>
             <p class="home-tagline">I'm a designer and technologist creating interactive experiences rooted in tactility, grounding, and wellbeing.</p>
         </header>
 
@@ -122,18 +117,18 @@
 
         <section class="featured-work">
             <h2 class="featured-work-header" id="featuredWorkHeader">
-                <a href="works.html" class="featured-work-header-link">
+                <span class="featured-work-header-link" id="featuredWorkHeaderLink">
                     <span id="featuredWorkHeaderText">FEATURED WORKS</span>
-                    <span class="header-arrow">></span>
-                </a>
+                    <span class="header-arrow" aria-hidden="true">></span>
+                </span>
             </h2>
             <div class="featured-projects" id="featuredProjects">
                 <!-- Featured projects will be generated from projects.json -->
             </div>
-            <a href="works.html" class="featured-work-cta" id="featuredWorkCta">
+            <button class="featured-work-cta" id="featuredWorkCta" aria-label="See all work in sidebar">
                 <span id="featuredWorkText">SEE ALL WORK</span>
                 <i data-lucide="chevron-right" class="section-icon"></i>
-            </a>
+            </button>
         </section>
 
         <footer class="content-footer">

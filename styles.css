@@ -78,7 +78,7 @@ body{
     overflow: hidden;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     html, body{
         margin: 0;
         padding: 0;
@@ -1039,6 +1039,12 @@ html::after{
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.content.loaded{
+    opacity: 1;
 }
 
 /* Desktop: Full width, reduced padding and lighter text */
@@ -1134,7 +1140,7 @@ html::after{
 }
 
 /* Hide header on mobile */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-work-header{
         display: none;
     }
@@ -1221,7 +1227,7 @@ html::after{
 /* Desktop: inherit from .content h1 (no overrides needed) */
 
 /* Mobile: custom styling */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .home-header h1{
         font-size: 1.75rem; /* Reduced from 2rem (~12.5% smaller) */
         font-weight: 500;
@@ -1245,7 +1251,7 @@ html::after{
     }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .home-header{
         margin-top: 0;
     }
@@ -1324,7 +1330,7 @@ html::after{
 
 
 /* Mobile: Black background for featured work section */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-work{
         background-color: var(--color-black);
         margin: 0;
@@ -1362,7 +1368,10 @@ html::after{
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        border: none;
         border-top: 1px solid rgba(26, 24, 22, 0.1);
+        border-radius: 0;
+        cursor: pointer;
         transition: background 0.3s var(--ease-weighted), border-color 0.3s var(--ease-weighted);
         flex-shrink: 0;
         width: 100%;
@@ -1370,6 +1379,8 @@ html::after{
         /* Calculate exact height for card sizing */
         height: auto;
         min-height: 4.5rem;
+        -webkit-appearance: none;
+        appearance: none;
     }
 
     .featured-work-cta:hover,
@@ -1407,7 +1418,7 @@ html::after{
 }
 
 /* Mobile: Ensure carousel clips properly */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-projects-carousel{
         overflow: hidden;
         clip-path: inset(0);
@@ -1469,7 +1480,7 @@ html::after{
 }
 
 /* Mobile: Vertical scroll with snap - Card stack effect */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-projects-cards{
         position: relative;
         flex-direction: column;
@@ -1799,8 +1810,8 @@ html::after{
 /* Desktop: Stronger gradient overlay for better text legibility */
 @media screen and (min-width: 769px) {
     .featured-project-gradient{
-        background: linear-gradient(to top, rgba(26, 24, 22, 0.95) 0%, rgba(26, 24, 22, 0.9) 20%, rgba(26, 24, 22, 0.85) 40%, rgba(26, 24, 22, 0.7) 60%, rgba(26, 24, 22, 0.5) 80%, transparent 100%);
-        height: 70%; /* Extend gradient coverage slightly */
+        background: linear-gradient(to top, rgba(26, 24, 22, 0.97) 0%, rgba(26, 24, 22, 0.93) 25%, rgba(26, 24, 22, 0.85) 45%, rgba(26, 24, 22, 0.65) 65%, rgba(26, 24, 22, 0.35) 80%, transparent 100%);
+        height: 75%; /* Extend gradient coverage for better text legibility */
     }
 }
 
@@ -1829,7 +1840,7 @@ html::after{
     /* Add text shadow for better legibility on light images */
     .featured-project-title,
     .featured-project-description{
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 }
 
@@ -1845,7 +1856,7 @@ html::after{
 }
 
 /* Mobile: Tighter spacing for better hierarchy */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-project-blurb{
         padding: 1.75rem 1.5rem 1.5rem 1.5rem; /* Consistent padding - matches sides */
         gap: 0.375rem; /* Tighter gap between elements */
@@ -1910,7 +1921,7 @@ html::after{
     transform: translateX(4px);
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-project-title{
         font-size: 1.25rem;
         margin-bottom: 0;
@@ -1943,7 +1954,7 @@ html::after{
     }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-project-description{
         font-size: 0.8125rem;
         line-height: 1.5; /* Tighter line height for 3 lines */
@@ -1980,7 +1991,7 @@ html::after{
 }
 
 /* Mobile: Tighter CTA spacing */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-project-cta{
         margin-top: 0.5rem; /* Spacing from description */
         margin-bottom: 1rem; /* Healthy spacing before dots */
@@ -2001,7 +2012,7 @@ html::after{
 }
 
 /* Mobile: CTA always visible */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767px) {
     .featured-project-cta{
         opacity: 1;
     }
@@ -3229,7 +3240,7 @@ body.sidebar-open .sidebar-toggle-icon-close{
     
     
     /* Responsive padding for larger mobile screens */
-    @media screen and (min-width: 480px) and (max-width: 768px) {
+    @media screen and (min-width: 480px) and (max-width: 767px) {
         .featured-work,
         .about-section,
         .content-footer{

@@ -2,8 +2,6 @@
 (function() {
     'use strict';
     try {
-        console.log('Script loaded successfully');
-        
         // Hide JS failure indicator if script loads successfully
         function hideFailureIndicator() {
             var indicator = document.getElementById('jsFailureIndicator');
@@ -367,8 +365,6 @@ async function loadComponent(componentName, insertMethod, options) {
     // iOS Safari compatibility - avoid template literals in some cases
     var componentPath = basePath + 'components/' + componentName + '.html';
     
-    console.log(`Attempting to load component: ${componentPath}`);
-    
     try {
         // Use fetch with error handling for Safari iOS
         let response;
@@ -384,20 +380,16 @@ async function loadComponent(componentName, insertMethod, options) {
             return loadComponentXHR(componentName, insertMethod, options);
         }
         
-        console.log('Fetch response for ' + componentName + ':', response.status, response.statusText);
-        
         if (!response.ok) {
             throw new Error('Failed to load component: ' + componentName + ' - ' + response.status + ' ' + response.statusText);
         }
         var html = await response.text();
-        console.log('Successfully fetched ' + componentName + ', HTML length:', html.length);
-        
+
         // Insert component based on method
         if (insertMethod === 'beforeMain') {
             const main = document.querySelector('main');
             if (main) {
                 main.insertAdjacentHTML('beforebegin', html);
-                console.log('Inserted ' + componentName + ' before main');
             } else {
                 throw new Error('Main element not found');
             }
@@ -405,7 +397,6 @@ async function loadComponent(componentName, insertMethod, options) {
             const body = document.body;
             if (body) {
                 body.insertAdjacentHTML('afterbegin', html);
-                console.log(`Inserted ${componentName} at beginning of body`);
             } else {
                 throw new Error('Body element not found');
             }
@@ -595,8 +586,6 @@ function loadComponentXHR(componentName, insertMethod, options) {
         }
         const componentPath = basePath + 'components/' + componentName + '.html';
         
-        console.log('Using XHR fallback for:', componentPath);
-        
         var xhr = new XMLHttpRequest();
         xhr.open('GET', componentPath, true);
         xhr.onreadystatechange = function() {
@@ -734,7 +723,6 @@ function fixSidebarPaths(basePath) {
                 // Fix path based on current location
                 const fixedHref = `${basePath}${href}`;
                 link.href = fixedHref;
-                console.log('Fixed About link:', href, '->', fixedHref, 'basePath:', basePath);
             }
             // Ensure link is clickable
             link.style.pointerEvents = 'auto';
@@ -744,21 +732,20 @@ function fixSidebarPaths(basePath) {
         }
     });
     
-    // Fix works section title link
-    const worksTitleLink = sidebar.querySelector('.works-section .nav-section-title-link');
-    if (worksTitleLink) {
-        const href = worksTitleLink.getAttribute('href');
-        if (href && !href.startsWith('http') && !href.startsWith('#')) {
-            if (!href.startsWith('/')) {
-                worksTitleLink.href = `${basePath}${href}`;
+    // Fix works section inner links (works title is now a div with inner <a> elements)
+    const worksTitleContainer = sidebar.querySelector('.works-section .nav-section-title-link');
+    if (worksTitleContainer) {
+        const innerLinks = worksTitleContainer.querySelectorAll('a[href]');
+        innerLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('http') && !href.startsWith('#')) {
+                if (!href.startsWith('/')) {
+                    link.href = `${basePath}${href}`;
+                }
             }
-            worksTitleLink.style.pointerEvents = 'auto';
-            worksTitleLink.style.cursor = 'pointer';
-            worksTitleLink.onclick = null;
-        }
+        });
     }
     
-    console.log('Fixed sidebar paths with basePath:', basePath);
 }
 
 // Initialize Lucide icons - multiple initialization methods for iOS compatibility
@@ -956,27 +943,23 @@ function initializeSidebarToggle() {
     document.addEventListener('touchend', function(e) {
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
-        
+
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
         const absDeltaX = Math.abs(deltaX);
         const absDeltaY = Math.abs(deltaY);
-        
+
         // Only process horizontal swipes (more horizontal than vertical)
         if (absDeltaX > absDeltaY && absDeltaX > minSwipeDistance) {
             const isSidebarOpen = sidebar.classList.contains('open');
-            
+
             // Swipe right to open (start further from edge to avoid Safari back gesture)
             // Safari's back gesture uses the leftmost 20-30px, so we start at 40px
             if (deltaX > 0 && !isSidebarOpen && touchStartX >= 40 && touchStartX < 120) {
-                e.preventDefault();
-                e.stopPropagation();
                 openSidebar();
             }
             // Swipe left to close (when sidebar is open - can swipe from anywhere)
             else if (deltaX < 0 && isSidebarOpen) {
-                e.preventDefault();
-                e.stopPropagation();
                 closeSidebar();
             }
         }
@@ -1020,14 +1003,11 @@ function initializeDateDisplay() {
 
 // Weather display with Open Meteo API - can be called multiple times
 function initializeWeatherDisplay() {
-    console.log('Weather script initialized');
     const logoWeather = document.getElementById('logoWeather');
     if (!logoWeather) {
         console.error('logoWeather element not found!');
         return;
     }
-    console.log('logoWeather element found');
-    
     // Skip if already initialized (check for existing event listeners)
     if (logoWeather.dataset.initialized === 'true') {
         return;
@@ -1107,20 +1087,21 @@ function initializeWeatherDisplay() {
     
     // Get cached weather data
     function getCachedWeather() {
-        // DISABLED FOR TESTING - always fetch fresh
-        console.log('Cache check disabled - always fetching fresh');
-        return null;
-        
         const cached = localStorage.getItem(CACHE_KEY);
         if (!cached) return null;
-        
-        const data = JSON.parse(cached);
-        const now = Date.now();
-        
-        if (now - data.timestamp < CACHE_DURATION) {
-            return data.weather;
+
+        try {
+            const data = JSON.parse(cached);
+            const now = Date.now();
+
+            if (now - data.timestamp < CACHE_DURATION) {
+                return data.weather;
+            }
+        } catch (e) {
+            // Invalid cache data, clear it
+            localStorage.removeItem(CACHE_KEY);
         }
-        
+
         return null;
     }
     
@@ -1144,8 +1125,6 @@ function initializeWeatherDisplay() {
                 const tempF = Math.round(data.current.temperature_2m);
                 const iconName = getIconName(weatherCode);
                 const isDay = isDaytimeInStLouis();
-                console.log('Is Daytime:', isDay);
-                
                 return {
                     tempF: tempF,
                     tempC: Math.round((tempF - 32) * 5 / 9),
@@ -1162,10 +1141,8 @@ function initializeWeatherDisplay() {
     
     // Load static climacon SVG from christiannaths/Climacons-Font
     async function loadClimaconIcon(iconName) {
-        console.log('Loading static icon:', iconName);
         try {
             const url = `https://raw.githubusercontent.com/christiannaths/Climacons-Font/master/SVG/${iconName}.svg`;
-            console.log('Fetching from:', url);
             const response = await fetch(url);
             if (!response.ok) {
                 console.warn(`Icon ${iconName} not found (${response.status}), falling back to Sun`);
@@ -1174,7 +1151,6 @@ function initializeWeatherDisplay() {
                 return await fetch(`https://raw.githubusercontent.com/christiannaths/Climacons-Font/master/SVG/${fallbackName}.svg`).then(r => r.text());
             }
             const svgText = await response.text();
-            console.log('Icon loaded successfully, SVG length:', svgText.length);
             return svgText;
         } catch (error) {
             console.error('Icon load error:', error);
@@ -1184,13 +1160,11 @@ function initializeWeatherDisplay() {
     
     // Display weather
     async function displayWeather(weather) {
-        console.log('displayWeather called with:', weather);
         if (!weather) {
             logoWeather.style.display = 'none';
             return;
         }
         
-        console.log('About to load icon:', weather.icon);
         const iconSvg = await loadClimaconIcon(weather.icon);
         if (!iconSvg) {
             logoWeather.style.display = 'none';
@@ -1206,8 +1180,6 @@ function initializeWeatherDisplay() {
         const iconContainer = document.createElement('span');
         iconContainer.className = 'logo-weather-icon';
         iconContainer.innerHTML = iconSvg;
-        console.log('Icon container created, SVG inserted. Container classes:', iconContainer.className);
-        
         // Create temperature text
         const tempSpan = document.createElement('span');
         tempSpan.className = 'logo-weather-text';
@@ -1294,19 +1266,12 @@ function initializeWeatherDisplay() {
     
     // Initialize weather display
     async function initWeather() {
-        console.log('initWeather called');
-        // Clear cache first
-        localStorage.removeItem(CACHE_KEY);
-        console.log('Cache cleared');
-        
         // Reserve space immediately to prevent header expansion
         // Set fixed height - space is already reserved by placeholder in HTML
         logoWeather.style.setProperty('height', '2rem', 'important');
         logoWeather.style.setProperty('min-height', '2rem', 'important');
         logoWeather.style.setProperty('flex-shrink', '0', 'important');
-        
-        // Always fetch fresh (cache disabled for testing)
-        console.log('Fetching fresh weather data');
+
         
         // Fetch fresh data
         const weather = await fetchWeather();
@@ -1962,8 +1927,6 @@ function initializeFilterToggle() {
     const isProjectPage = window.location.pathname.includes('/works/') && 
                           window.location.pathname.endsWith('.html');
     
-    console.log('initializeFilterToggle - isProjectPage:', isProjectPage, 'pathname:', window.location.pathname);
-    
     if (isProjectPage) {
         // On project pages, always keep filter panel closed
         // Force it closed immediately and prevent any opening
@@ -1971,8 +1934,6 @@ function initializeFilterToggle() {
         worksSection.classList.remove('filter-expanded'); // Remove any expanded class
         // Clear any saved state that might open it
         localStorage.setItem('worksFilterCollapsed', 'true');
-        console.log('Project page detected - keeping filter panel closed');
-        
         // Also ensure it stays closed after a brief delay (in case something opens it)
         setTimeout(() => {
             if (!worksSection.classList.contains('filter-collapsed')) {
@@ -1989,7 +1950,7 @@ function initializeFilterToggle() {
         }
     } else {
         // Default: collapsed on mobile, expanded on desktop
-        if (isMobile) {
+        if (window.innerWidth <= 767) {
             worksSection.classList.add('filter-collapsed');
         } else {
             worksSection.classList.remove('filter-collapsed');
@@ -2234,7 +2195,6 @@ function applySort(sortType, direction = 'asc', projectsArray = null, skipAnimat
     const isProjectPage = window.location.pathname.includes('/works/') && 
                           window.location.pathname.endsWith('.html');
     if (isProjectPage) {
-        console.log('Skipping sort on project page - keeping active project first');
         return;
     }
     
@@ -2874,6 +2834,20 @@ document.addEventListener('DOMContentLoaded', function() {
             stopScrambling();
         }, 2000);
     }, { passive: false });
+
+    // Click handler: open sidebar to show all works
+    featuredWorkCta.addEventListener('click', function() {
+        var sidebar = document.getElementById('sidebar');
+        var sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebar && !sidebar.classList.contains('open') && window.innerWidth <= 767) {
+            // On mobile, open the sidebar
+            if (sidebarToggle) sidebarToggle.click();
+        } else if (sidebar) {
+            // On desktop, scroll sidebar works list into view
+            var worksList = sidebar.querySelector('.works-list');
+            if (worksList) worksList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
 });
 
 // About section slow-motion calming glitch effect on hover (removed - about section no longer in main content)
@@ -3250,22 +3224,33 @@ document.addEventListener('DOMContentLoaded', function() {
     pandjiNameSpan.addEventListener('mouseenter', startScrambling);
     pandjiNameSpan.addEventListener('mouseleave', stopScrambling);
     pandjiNameSpan.style.cursor = 'pointer'; // Indicate it's interactive
-    
-    // Mobile: tap to trigger name switching
+
+    // Keyboard: Enter/Space to trigger name switching
     let isToggled = false;
-    pandjiNameSpan.addEventListener('touchstart', function(e) {
-        e.preventDefault();
+    function triggerNameToggle() {
         if (!isToggled) {
             startScrambling();
             isToggled = true;
-            // After animation completes, toggle back
             setTimeout(function() {
                 stopScrambling();
                 setTimeout(function() {
                     isToggled = false;
-                }, 2000); // Allow time for glitch back animation
+                }, 2000);
             }, 1000);
         }
+    }
+
+    pandjiNameSpan.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            triggerNameToggle();
+        }
+    });
+
+    // Mobile: tap to trigger name switching
+    pandjiNameSpan.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        triggerNameToggle();
     }, { passive: false });
     
     // Add click handler to navigate to about me section in sidebar
@@ -3305,8 +3290,6 @@ document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     
     function initComponents() {
-        console.log('Initializing components...');
-        
         // Initialize components
         (async function() {
             try {
@@ -3324,12 +3307,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Try multiple initialization methods for maximum compatibility
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded fired');
             initComponents();
         });
     } else {
         // DOM already loaded
-        console.log('DOM already ready');
         initComponents();
     }
     
@@ -3337,7 +3318,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         var sidebar = document.getElementById('sidebar');
         if (!sidebar && document.body) {
-            console.log('Delayed initialization - sidebar missing');
             initComponents();
         }
     }, 500);
@@ -3359,8 +3339,6 @@ async function loadComponentsMain() {
         }
     }
     
-    console.log('Loading components with basePath: ' + basePath + ', pathname: ' + window.location.pathname);
-    
     // Only load components if they don't already exist
     const sidebarExists = document.getElementById('sidebar');
     
@@ -3377,11 +3355,9 @@ async function loadComponentsMain() {
     });
     
     if (!sidebarExists) {
-        console.log('Loading sidebar component...');
         try {
             const result = await loadComponent('sidebar', 'beforeMain', { basePath });
             if (result) {
-                console.log('Sidebar loaded successfully');
             } else {
                 console.error('Sidebar failed to load');
                 // Show content even if sidebar fails to load
@@ -3403,7 +3379,6 @@ async function loadComponentsMain() {
             }
         }
     } else {
-        console.log('Sidebar already exists');
         // If sidebar already exists, show content after a brief delay
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.content');
@@ -3461,7 +3436,6 @@ async function loadProjectsData(basePath) {
         }
         const data = await response.json();
         projectsData = data;
-        console.log('Projects data loaded:', data.projects.length, 'projects');
         return data;
     } catch (error) {
         console.error('Error loading projects data:', error);
@@ -3496,7 +3470,6 @@ function loadProjectsDataXHR(basePath) {
                     try {
                         var data = JSON.parse(xhr.responseText);
                         projectsData = data;
-                        console.log('Projects data loaded via XHR:', data.projects.length, 'projects');
                         resolve(data);
                     } catch (e) {
                         reject(new Error('Failed to parse JSON: ' + e.message));
@@ -3550,7 +3523,6 @@ function generateSidebarProjectList(projects, basePath) {
     
     // Clear existing items completely - double check
     const existingItems = worksList.querySelectorAll('li');
-    console.log('Clearing', existingItems.length, 'existing items from sidebar');
     worksList.innerHTML = '';
     
     // Verify it's cleared
@@ -3582,8 +3554,8 @@ function generateSidebarProjectList(projects, basePath) {
         console.warn('Found duplicates in projects data:', duplicateCounts);
     }
     
-    // Store projects data for sorting
-    projectsData = worksProjects;
+    // Store projects array for sorting (keep projectsData as original object)
+    projectsData = { projects: worksProjects };
     
     // Determine basePath if not provided
     if (!basePath) {
@@ -3653,7 +3625,6 @@ function generateSidebarProjectList(projects, basePath) {
             dateSpan.className = 'project-date-sidebar';
             dateSpan.textContent = project.date;
             linkWrapper.appendChild(dateSpan);
-            console.log('Added date for', project.slug, ':', project.date);
         }
         
         li.appendChild(linkWrapper);
@@ -3680,8 +3651,6 @@ function generateSidebarProjectList(projects, basePath) {
     if (duplicateSlugs.length > 0) {
         console.error('DUPLICATES FOUND IN SIDEBAR:', duplicateSlugs);
     }
-    
-    console.log('Sidebar project list generated:', worksProjects.length, 'projects,', finalItems.length, 'items in DOM');
     
     // On project pages, don't sort - keep active project first
     const isProjectPage = window.location.pathname.includes('/works/') && 
@@ -3767,7 +3736,6 @@ function renderProjectPage(project) {
                                    !contentElement.innerHTML.includes('will be inserted');
     
     if (hasPreRenderedContent) {
-        console.log('Project page already has pre-rendered content, skipping JS rendering');
         // Still update tags and other metadata that might be missing
         updateProjectMetadata(project);
         return;
@@ -3841,7 +3809,6 @@ function renderProjectPage(project) {
         }
     }
     
-    console.log('Project page rendered:', project.slug);
 }
 
 // Update only metadata (tags, date) without overwriting content
@@ -4005,7 +3972,6 @@ function generateFeaturedProjects(projects, basePath) {
     // Initialize scroll tracking for progress dots (mobile)
     initializeCarouselScroll(container, dotsContainer);
     
-    console.log('Featured projects carousel generated:', featured.length);
 }
 
     // Ensure clean state on initial load - reset if not mobile
