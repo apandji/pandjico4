@@ -104,8 +104,6 @@ function initializeHeaderWave() {
 
     // Remove border — SVG handles the visual edge
     header.style.borderBottom = 'none';
-    // Depth shadow — header feels elevated above the cards
-    header.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)';
 
     // --- Name slowGlitch (Pandji ↔ Andrew) synced with wave ---
     var pandjiNameEl = document.getElementById('pandjiName');
@@ -382,7 +380,9 @@ function checkBlurbAutoscroll(el) {
 }
 
 function initializeInnerPageHeader() {
-    if (window.innerWidth > 767) return;
+    // Skip only on desktop/tablet where sidebar is always visible (≥768px)
+    // At 600-767px (tablet bridge), sidebar is an overlay so header is needed
+    if (window.innerWidth >= 768) return;
     var header = document.querySelector('.inner-page-header');
     if (!header) return;
 
@@ -533,7 +533,17 @@ function initializeInnerPageHeader() {
     requestAnimationFrame(tick);
 }
 
-document.addEventListener('DOMContentLoaded', initializeInnerPageHeader);
+document.addEventListener('DOMContentLoaded', function() {
+    initializeInnerPageHeader();
+    // Re-initialize on resize if crossing into mobile/tablet-bridge range
+    var innerHeaderInitialized = window.innerWidth < 768;
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < 768 && !innerHeaderInitialized) {
+            innerHeaderInitialized = true;
+            initializeInnerPageHeader();
+        }
+    });
+});
 
 // Component loader - loads reusable HTML components
 // Safari iOS compatible version with fallback
@@ -974,9 +984,12 @@ function initializeSidebarToggle() {
         const isMobile = window.innerWidth <= 767;
         if (isMobile) {
             sidebarToggle.style.display = 'flex';
-            // Ensure sidebar starts closed on mobile
-            if (sidebar && !sidebar.classList.contains('open')) {
-                sidebar.style.transform = 'translateX(-100%)';
+            // Clear any inline transform — let CSS handle positioning
+            // CSS uses .sidebar { transform: translateX(-100%); } and
+            // .sidebar.open { transform: translateX(0); } which only
+            // works if no inline style overrides them.
+            if (sidebar) {
+                sidebar.style.transform = '';
             }
         } else {
             sidebarToggle.style.display = 'none';
@@ -1009,6 +1022,8 @@ function initializeSidebarToggle() {
     }
     
     function openSidebar() {
+        // Clear any inline transform that would override the CSS class
+        sidebar.style.transform = '';
         // Add open class to instantly show sidebar
         sidebar.classList.add('open');
         document.body.classList.add('sidebar-open');
@@ -4117,6 +4132,7 @@ function generateFeaturedProjects(projects, basePath) {
     featured.forEach(function(project, index) {
         const card = document.createElement('article');
         card.className = 'featured-project-card';
+        if (index === 0) card.classList.add('is-expanded');
         card.setAttribute('data-index', index);
         // Ensure white border is applied on mobile only (except first card)
         // Tablets use desktop grid layout with black borders, so no inline styles needed
@@ -4126,17 +4142,17 @@ function generateFeaturedProjects(projects, basePath) {
             card.style.borderBottom = 'none';
             card.style.borderLeft = 'none';
         }
-        
+
         const link = document.createElement('a');
         link.href = basePath + 'works/' + project.slug + '.html';
         link.className = 'featured-project-card-link';
         link.setAttribute('aria-label', 'View ' + (project.title || project.slug));
         link.setAttribute('aria-describedby', 'featured-project-' + index + '-desc');
-        
+
         // Image container
         const imageContainer = document.createElement('div');
         imageContainer.className = 'featured-project-image-container';
-        
+
         if (project.image) {
             const img = document.createElement('img');
             img.src = project.image;
@@ -4148,16 +4164,16 @@ function generateFeaturedProjects(projects, basePath) {
             };
             imageContainer.appendChild(img);
         }
-        
+
         // Gradient overlay
         const gradientOverlay = document.createElement('div');
         gradientOverlay.className = 'featured-project-gradient';
         imageContainer.appendChild(gradientOverlay);
-        
+
         // Blurb container (overlay on image)
         const blurbContainer = document.createElement('div');
         blurbContainer.className = 'featured-project-blurb';
-        
+
         // Title with arrow - add data attribute for slowGlitch
         const h3 = document.createElement('h3');
         h3.className = 'featured-project-title';
@@ -4172,7 +4188,7 @@ function generateFeaturedProjects(projects, basePath) {
         arrowIcon.className = 'title-arrow';
         h3.appendChild(arrowIcon);
         blurbContainer.appendChild(h3);
-        
+
         // Blurb (use 'blurb' for featured cards, fallback to 'description' if blurb doesn't exist)
         const blurbText = project.blurb || project.description;
         if (blurbText) {
@@ -4182,7 +4198,20 @@ function generateFeaturedProjects(projects, basePath) {
             p.textContent = blurbText;
             blurbContainer.appendChild(p);
         }
-        
+
+        // Tag chips (visible in expanded state on desktop/tablet)
+        if (project.tags && project.tags.length > 0) {
+            const tagsContainer = document.createElement('div');
+            tagsContainer.className = 'featured-project-tags';
+            project.tags.forEach(function(tag) {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'featured-tag';
+                tagSpan.textContent = '#' + tag;
+                tagsContainer.appendChild(tagSpan);
+            });
+            blurbContainer.appendChild(tagsContainer);
+        }
+
         imageContainer.appendChild(blurbContainer);
         link.appendChild(imageContainer);
         card.appendChild(link);
@@ -4200,28 +4229,51 @@ function generateFeaturedProjects(projects, basePath) {
     
     // Initialize scroll tracking for progress dots (mobile)
     initializeCarouselScroll(container, dotsContainer);
-    
+
+    // Initialize accordion hover (desktop/tablet)
+    initializeCardAccordion();
 }
 
-    // Ensure clean state on initial load - reset if not mobile
-    if (window.innerWidth > 767) {
-        // Wait for cards to be created, then reset
-        setTimeout(function() {
-            const cards = document.querySelectorAll('.featured-project-card');
-            if (cards.length > 0) {
-                cards.forEach(function(card) {
-                    card.style.height = '';
-                    card.style.minHeight = '';
-                    card.style.maxHeight = '';
-                    card.style.borderTop = '';
-                    card.style.borderRight = '';
-                    card.style.borderBottom = '';
-                    card.style.borderLeft = '';
-                });
-            }
-        }, 100);
+    // Accordion hover for featured cards (desktop/tablet — ≥574px)
+    // Listeners are always attached but check viewport width before acting.
+    // This ensures resize from mobile → desktop works without reattaching.
+    function initializeCardAccordion() {
+        var cards = document.querySelectorAll('.featured-project-card:not(.carousel-clone)');
+        if (!cards.length) return;
+
+        var leaveTimer = null;
+
+        function isAccordionActive() {
+            return window.innerWidth >= 574;
+        }
+
+        function expandCard(card) {
+            cards.forEach(function(c) { c.classList.remove('is-expanded'); });
+            card.classList.add('is-expanded');
+        }
+
+        function resetToDefault() {
+            cards.forEach(function(c) { c.classList.remove('is-expanded'); });
+            if (cards[0]) cards[0].classList.add('is-expanded');
+        }
+
+        cards.forEach(function(card) {
+            card.addEventListener('mouseenter', function() {
+                if (!isAccordionActive()) return;
+                clearTimeout(leaveTimer);
+                expandCard(card);
+            });
+
+            card.addEventListener('mouseleave', function() {
+                if (!isAccordionActive()) return;
+                clearTimeout(leaveTimer);
+                leaveTimer = setTimeout(function() {
+                    resetToDefault();
+                }, 150);
+            });
+        });
     }
-    
+
     // Initialize carousel scroll tracking for progress dots and card stack animation
     // SIMPLIFIED VERSION - cards in normal flow with CSS scroll-snap
     function initializeCarouselScroll(container, dotsContainer) {
@@ -4511,12 +4563,13 @@ function generateFeaturedProjects(projects, basePath) {
             card.style.borderBottom = '';
             card.style.borderLeft = '';
         });
-        
+
         // Reset container styles
         if (cardsContainer) {
             cardsContainer.style.paddingBottom = '';
+            cardsContainer.style.height = '';
         }
-        
+
         // Reset featured work section styles (if they were set)
         const featuredWork = document.querySelector('.featured-work');
         if (featuredWork) {
@@ -4524,25 +4577,37 @@ function generateFeaturedProjects(projects, basePath) {
             featuredWork.style.height = '';
             featuredWork.style.maxHeight = '';
         }
-        
+
         // Clear CSS variables that were set for mobile
         document.documentElement.style.removeProperty('--header-height');
         document.documentElement.style.removeProperty('--cta-height');
+
+        // Clear home-header inline styles set by initializeHeaderWave()
+        var homeHeader = document.querySelector('.home-header');
+        if (homeHeader) {
+            homeHeader.style.boxShadow = '';
+            homeHeader.style.borderBottom = '';
+        }
+
+        // Restore accordion default state — first card expanded
+        var realCards = document.querySelectorAll('.featured-project-card:not(.carousel-clone)');
+        realCards.forEach(function(c) { c.classList.remove('is-expanded'); });
+        if (realCards[0]) realCards[0].classList.add('is-expanded');
     }
-    
+
     // Update on resize with debouncing to prevent layout issues
     let resizeTimeout;
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function() {
-            const isMobile = window.innerWidth <= 767;
-            
+            var isMobile = window.innerWidth <= 599;
+
             if (isMobile) {
                 // Mobile: setup dynamic card sizing
                 setupCards();
                 updateCardStates();
             } else {
-                // Tablet/Desktop: reset all mobile-specific styles immediately
+                // Tablet/Desktop: reset all mobile-specific styles
                 resetToDesktopLayout();
             }
         }, 150);
