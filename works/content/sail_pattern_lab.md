@@ -9,10 +9,11 @@ image: https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=c
 hero_image: https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800
 featured: true
 links:
-  - label: view project
-    url: "#"
-  - label: case study
-    url: "#"
+  - label: go to project
+    url: "https://apandji.github.io/haptic-sound-visualizer/index.html"
+  - label: github
+    url: "https://github.com/apandji/haptic-sound-visualizer"
+    
 ---
 
 Building on past work with active haptic feedback systems that communicate performance data during athletic training, our team is developing a web application to evaluate how haptic patterns affect brain waves.

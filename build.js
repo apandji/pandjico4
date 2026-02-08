@@ -295,6 +295,39 @@ function mergeProjectData(project, frontmatter) {
     return merged;
 }
 
+// Generate the static works-list HTML for sidebar.html
+// Matches the structure that generateSidebarProjectList() produces at runtime
+function updateSidebarWorksList(projects) {
+    const sidebarPath = path.join(__dirname, 'components', 'sidebar.html');
+    if (!fs.existsSync(sidebarPath)) {
+        console.log('⚠️  components/sidebar.html not found, skipping sidebar update');
+        return;
+    }
+
+    let sidebar = fs.readFileSync(sidebarPath, 'utf8');
+
+    // Sort by year descending (newest first) to match default sort
+    const sorted = [...projects].sort((a, b) => (b.date || 0) - (a.date || 0));
+
+    // Generate list items matching the JS-generated structure
+    const listItems = sorted.map(project => {
+        const tags = (project.tags || []).join(' ');
+        const href = `works/${project.slug}.html`;
+        const dateHtml = project.date
+            ? `<span class="project-date-sidebar">${project.date}</span>`
+            : '';
+        return `                <li data-tags="${tags}"><div class="project-link-wrapper"><a href="${href}">${project.slug}</a>${dateHtml}</div></li>`;
+    }).join('\n');
+
+    const newWorksList = `<ul class="works-list">\n${listItems}\n            </ul>`;
+
+    // Replace the existing works-list
+    sidebar = sidebar.replace(/<ul class="works-list">[\s\S]*?<\/ul>/, newWorksList);
+
+    fs.writeFileSync(sidebarPath, sidebar, 'utf8');
+    console.log('✅ components/sidebar.html works-list updated');
+}
+
 // Main build function
 function build(syncJson = false) {
     console.log('🚀 Building project pages...\n');
@@ -348,20 +381,16 @@ function build(syncJson = false) {
         updatedProjects.push(finalProject);
     });
     
-    // Sync frontmatter back to projects.json if requested
-    if (syncJson) {
-        console.log('\n📝 Syncing frontmatter to projects.json...');
-        const projectsData = { projects: updatedProjects };
-        fs.writeFileSync(projectsPath, JSON.stringify(projectsData, null, 2) + '\n', 'utf8');
-        console.log('✅ projects.json updated');
-    }
-    
+    // Always sync frontmatter back to projects.json (markdown is source of truth)
+    console.log('\n📝 Syncing frontmatter to projects.json...');
+    const projectsData = { projects: updatedProjects };
+    fs.writeFileSync(projectsPath, JSON.stringify(projectsData, null, 2) + '\n', 'utf8');
+    console.log('✅ projects.json updated');
+
+    // Update sidebar.html static works-list to match runtime structure
+    updateSidebarWorksList(updatedProjects);
+
     console.log(`\n✨ Build complete! ${built} files built, ${skipped} skipped.`);
-    if (syncJson) {
-        console.log('💡 Tip: Run without --sync to build without updating JSON');
-    } else {
-        console.log('💡 Tip: Run with --sync to update projects.json from frontmatter');
-    }
 }
 
 // Run build

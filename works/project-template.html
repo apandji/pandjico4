@@ -2,22 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title data-project-title>Project Title — pandjico</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../styles.css?v=13">
+    <link rel="stylesheet" href="../styles.css?v=15">
     <script src="https://unpkg.com/lucide@0.563.0"></script>
-    <script src="../src/js/script.js?v=65" defer></script>
+    <script src="../src/js/script.js?v=70" defer></script>
 </head>
 
 <body>
     <!-- Components load here via JavaScript -->
 
+    <!-- Inner page sticky header (mobile only, populated by JS) -->
+    <header class="inner-page-header" aria-label="Page navigation">
+        <div class="inner-page-header-row">
+            <a class="inner-page-header-back" id="innerPageBack" href="#" aria-label="Go back">
+                <i data-lucide="chevron-left" class="inner-page-header-back-icon"></i>
+                <span class="inner-page-header-title" id="innerPageTitle"></span>
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i data-lucide="panel-right-close" class="sidebar-toggle-icon sidebar-toggle-icon-open"></i>
+                <i data-lucide="panel-right-open" class="sidebar-toggle-icon sidebar-toggle-icon-close"></i>
+            </button>
+        </div>
+        <p class="inner-page-header-blurb" id="innerPageBlurb"></p>
+    </header>
+
     <main class="content">
         <header class="project-header">
             <h1 class="project-title" data-project-title>Project Title</h1>
+            <p class="project-blurb" data-project-blurb></p>
             <div class="project-meta">
                 <div class="project-tags" data-project-tags>
                     <!-- Tags will be inserted here -->
@@ -37,6 +53,15 @@
         <div class="project-links" data-project-links>
             <!-- Links will be inserted here if they exist -->
         </div>
+
+        <!-- Next project inline CTA (desktop, populated by JS) -->
+        <div class="next-project-inline" id="nextProjectInline" aria-label="Next project"></div>
     </main>
+
+    <!-- Next project CTA (mobile fixed bar, populated by JS) -->
+    <a class="next-project-cta" id="nextProjectCta" href="#" aria-label="Go to next project">
+        <span class="next-project-cta-text" id="nextProjectCtaText"></span>
+        <i data-lucide="chevron-right" class="next-project-cta-icon"></i>
+    </a>
 </body>
 </html>

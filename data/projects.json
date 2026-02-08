@@ -4,195 +4,268 @@
       "id": "sail_pattern_lab",
       "title": "SAIL Patterns App",
       "slug": "sail_pattern_lab",
-      "tags": ["research", "haptics", "ux"],
-      "date": "2026",
+      "tags": [
+        "research",
+        "haptics",
+        "ux"
+      ],
+      "date": 2026,
       "blurb": "platform for biohaptics testing",
       "description": "As part of the Sensory & Ambient Interfaces Lab at WashU, we are exploring technology-enabled test protocols to measure, categorize and qualify different haptic patterns.",
       "content": "Building on past work with active haptic feedback systems that communicate performance data during athletic training, our team is developing a web application to evaluate how haptic patterns affect brain waves.\n\nyou can structure this however makes sense for each project. some might have more text, others might be more visual.",
       "image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [
         {
-          "label": "view project",
-          "url": "#"
-        },
-        {
-          "label": "case study",
-          "url": "#"
+          "label": "go to project",
+          "url": "https://apandji.github.io/haptic-sound-visualizer/index.html"
         }
       ],
-      "featured": true
+      "featured": true,
+      "hero_image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "sonic_scroller",
       "title": "Sonic Scroller",
       "slug": "sonic_scroller",
-      "tags": ["play", "haptics"],
-      "date": null,
+      "tags": [
+        "play",
+        "haptics"
+      ],
+      "date": 2026,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": null,
+      "hero_image": "https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "sapling",
       "title": "Sapling",
       "slug": "sapling",
-      "tags": ["play", "haptics", "ux"],
-      "date": null,
-      "blurb": "centering remembrance and grounding through spatial haptics",
+      "tags": [
+        "play",
+        "haptics",
+        "ux"
+      ],
+      "date": 2025,
+      "blurb": "grounding + remembrance through spatial haptics",
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1070536/pexels-photo-1070536.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": true
+      "featured": true,
+      "hero_image": "https://images.pexels.com/photos/1070536/pexels-photo-1070536.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "weather_aura",
       "title": "Weather Aura",
       "slug": "weather_aura",
-      "tags": ["play", "weather", "ux", "research"],
-      "date": null,
-      "blurb": "weather journal app and experiments in dynamic visualization",
+      "tags": [
+        "play",
+        "weather",
+        "ux",
+        "research"
+      ],
+      "date": 2025,
+      "blurb": "weather journal + visualizer",
       "description": "Playful exploration of weather data through haptic and visual interfaces.",
       "content": "",
       "image": "https://images.pexels.com/photos/2098428/pexels-photo-2098428.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": true
+      "featured": true,
+      "hero_image": "https://images.pexels.com/photos/2098428/pexels-photo-2098428.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "driftpad",
       "title": "Driftpad",
       "slug": "driftpad",
-      "tags": ["play", "research"],
-      "date": null,
+      "tags": [
+        "play",
+        "research"
+      ],
+      "date": 2025,
       "blurb": "digital drawing pad for mindful wandering",
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": true
+      "featured": true,
+      "hero_image": "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "authconnect",
       "title": "AuthConnect",
       "slug": "authconnect",
-      "tags": ["health", "ux"],
-      "date": null,
+      "tags": [
+        "health",
+        "ux"
+      ],
+      "date": 2024,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "ehr-integrated worklist for processing prior-auths",
+      "hero_image": "https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "videochat",
       "title": "VideoChat",
       "slug": "videochat",
-      "tags": ["health", "ux"],
-      "date": null,
+      "tags": [
+        "health",
+        "ux"
+      ],
+      "date": 2023,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181391/pexels-photo-1181391.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "staff-facing telehealth platform workflows",
+      "hero_image": "https://images.pexels.com/photos/1181391/pexels-photo-1181391.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "ascension_rx",
       "title": "Ascension RX",
       "slug": "ascension_rx",
-      "tags": ["health", "strategy", "brand"],
-      "date": null,
-      "blurb": "reimagining integrated pharmacy services for a national healthcare system",
+      "tags": [
+        "health",
+        "strategy",
+        "brand"
+      ],
+      "date": 2021,
+      "blurb": "reimagined vision for pharmacy services",
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": true
+      "featured": true,
+      "hero_image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "price_transparency",
       "title": "Price Transparency",
       "slug": "price_transparency",
-      "tags": ["health", "research", "strategy"],
-      "date": null,
+      "tags": [
+        "health",
+        "research",
+        "strategy"
+      ],
+      "date": 2020,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "price transparency for health services",
+      "hero_image": "https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "caregiver_support",
       "title": "Caregiver Support",
       "slug": "caregiver_support",
-      "tags": ["health", "ux", "strategy"],
-      "date": null,
+      "tags": [
+        "health",
+        "ux",
+        "strategy"
+      ],
+      "date": 2018,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "platform for caregiver support",
+      "hero_image": "https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "synek",
       "title": "Synek",
       "slug": "synek",
-      "tags": ["brand", "strategy"],
-      "date": null,
+      "tags": [
+        "brand",
+        "strategy"
+      ],
+      "date": 2014,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181246/pexels-photo-1181246.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "brand identity for beer disruptor",
+      "hero_image": "https://images.pexels.com/photos/1181246/pexels-photo-1181246.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "full_circle",
       "title": "Full Circle",
       "slug": "full_circle",
-      "tags": ["brand", "strategy"],
-      "date": null,
+      "tags": [
+        "brand",
+        "strategy"
+      ],
+      "date": 2017,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "bringing young professionals together in stl",
+      "hero_image": "https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "aqi_historical_record",
       "title": "AQI Historical Record",
       "slug": "aqi_historical_record",
-      "tags": ["weather", "play"],
-      "date": null,
+      "tags": [
+        "weather",
+        "play"
+      ],
+      "date": 2026,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": null,
+      "hero_image": "https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "walkie_talkie",
       "title": "Walkie Talkie",
       "slug": "walkie_talkie",
-      "tags": ["play", "ux"],
-      "date": null,
+      "tags": [
+        "play",
+        "ux"
+      ],
+      "date": 2025,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "speculative spatial social interface",
+      "hero_image": "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800"
     },
     {
       "id": "animated_logos",
       "title": "Animated Logos",
       "slug": "animated_logos",
-      "tags": ["play", "brand"],
-      "date": null,
+      "tags": [
+        "play",
+        "brand"
+      ],
+      "date": 2015,
       "description": "",
       "content": "",
       "image": "https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=800",
       "links": [],
-      "featured": false
+      "featured": false,
+      "blurb": "bringing logos to life",
+      "hero_image": "https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=800"
     }
   ]
 }

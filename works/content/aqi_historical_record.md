@@ -2,7 +2,7 @@
 title: AQI Historical Record
 slug: aqi_historical_record
 tags: [weather, play]
-date: null
+date: 2026
 blurb: null
 description: ""
 image: https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?auto=compress&cs=tinysrgb&w=800
@@ -12,3 +12,5 @@ links: []
 ---
 
 <!-- Write your project content here -->
+
+As part of exploring 

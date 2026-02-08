@@ -2,8 +2,8 @@
 title: Full Circle
 slug: full_circle
 tags: [brand, strategy]
-date: null
-blurb: null
+date: 2017
+blurb: bringing young professionals together in stl
 description: ""
 image: https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800
 hero_image: https://images.pexels.com/photos/1181245/pexels-photo-1181245.jpeg?auto=compress&cs=tinysrgb&w=800

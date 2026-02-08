@@ -2,7 +2,7 @@
 title: Sonic Scroller
 slug: sonic_scroller
 tags: [play, haptics]
-date: null
+date: 2026
 blurb: null
 description: ""
 image: https://images.pexels.com/photos/163036/mario-luigi-yoschi-figures-163036.jpeg?auto=compress&cs=tinysrgb&w=800
